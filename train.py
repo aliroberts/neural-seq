@@ -7,7 +7,7 @@ import shutil
 from fastai.text import * 
 
 DATA_DIR_ALL = Path('data/encoded')
-OUT_DIR = Path('data/split')
+OUT_DIR = Path('data/')
 
 def ensure_dir_exists(path):
     """ Ensure that a directory at the given path exists """
