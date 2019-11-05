@@ -34,7 +34,7 @@ def main():
     data_lm = load_data(DATA_DIR, 'data_lm_export.pkl')
     print('Training...')
     learn = language_model_learner(data_lm, AWD_LSTM, drop_mult=0.5, pretrained=False)
-    learn.fit_one_cycle(10, 5e-3, moms=(0.8,0.7))
+    learn.fit_one_cycle(12, 5e-3, moms=(0.8,0.7))
     learn.save('model_v1_10_epochs')
 
 if __name__ == '__main__':
