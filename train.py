@@ -30,11 +30,12 @@ class CustomTokenizer(Tokenizer):
 def main():
     RANDOM_SEED = 42
     DATA_DIR = OUT_DIR
-
+    print('Loading data...')
     data_lm = load_data(DATA_DIR, 'data_lm_export.pkl')
+    print('Training...')
     learn = language_model_learner(data_lm, AWD_LSTM, drop_mult=0.5, pretrained=False)
     learn.fit_one_cycle(1, 1e-2)
     learn.save('model_v1_10_epochs')
 
 if __name__ == '__main__':
-    pass
+    main()
