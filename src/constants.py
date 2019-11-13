@@ -5,6 +5,7 @@ DATA_DIR = Path('.data')
 
 # Store the extracted MIDI files here
 MIDI_DIR = DATA_DIR/'midi_data'
+MIDI_ARTISTS = MIDI_DIR/'clean_midi'
 
 # The default directory for extracting our encoded dataset to
 DATASET_DIR = DATA_DIR/'dataset'
