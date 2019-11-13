@@ -13,4 +13,4 @@ VALIDATION_SET_DIR = DATASET_DIR/'valid'
 TEST_SET_DIR = DATASET_DIR/'test'
 
 # MIDI files (cleaned and sorted into artist directories)
-MIDI_DATA_URL = ''
+MIDI_DATA_URL = 'http://hog.ee.columbia.edu/craffel/lmd/clean_midi.tar.gz'
