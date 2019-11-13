@@ -97,4 +97,7 @@ venv.bak/
 # Jupyter
 .ipynb_checkpoints
 
+# neural-seq
+.data
+
 

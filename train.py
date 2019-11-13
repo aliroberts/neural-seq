@@ -4,18 +4,12 @@ import os
 import random
 import shutil
 
+from utils import ensure_dir_exists
+
 from fastai.text import * 
 
 DATA_DIR_ALL = Path('data/encoded')
 OUT_DIR = Path('data/')
-
-def ensure_dir_exists(path):
-    """ Ensure that a directory at the given path exists """
-    try:
-        os.makedirs(path)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
 
 class MIDISeqTokenizer(BaseTokenizer):
     def tokenizer(self, text):
