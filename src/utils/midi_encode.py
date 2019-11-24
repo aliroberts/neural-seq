@@ -122,7 +122,7 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
     Takes a list of midi file paths and an output destination in which to save the encodings.
     """
     # Keep track of the files that we've successfully encoded so that we don't end up encoding a duplicate
-    # file (there are several different versions of the the name track in the cleaned MIDI dataset, for example)
+    # file (there are several different versions of the the same track in the cleaned MIDI dataset, for example)
     if not already_encoded:
         encoded = []
     else:
