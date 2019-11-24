@@ -2,6 +2,7 @@
 import argparse
 import sys
 
+from src import NeuralSeqUnrecognisedArgException
 from src.commands import encode, decode, fetch_data, gen_dataset, list_artists, list_songs, train
 
 from src.constants import DATA_DIR
@@ -9,7 +10,7 @@ from src.constants import DATA_DIR
 
 def main():
     parser = argparse.ArgumentParser(prog='main')
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(dest='subparser')
 
     # Decoding of string format to MIDI file
     parser_decode = subparsers.add_parser('decode')
@@ -35,13 +36,13 @@ def main():
         '--artists', default=None, help='A text file containing a newline delimited list of artists whose songs should be included in the dataset.', type=str)
     parser_gen_dataset.add_argument(
         '--midi-files', default=None, help='A CSV with file, type={train, valid, test} columns to encode and split accordingly', type=str)
-    parser_gen_dataset.add_argument('--dest', default=DATA_DIR/'dataset', required=True,
+    parser_gen_dataset.add_argument('--dest', default=DATA_DIR/'dataset',
                                     help='Where to output the dataset', type=str)
     parser_gen_dataset.add_argument('--instrument-filter', default='bass',
                                     help='A filter to be applied to the instrument name in the MIDI file', type=str)
     parser_gen_dataset.add_argument('--no-transpose', default=False, action='store_false',
                                     help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
-    parser_gen_dataset.set_defaults(func=encode.run)
+    parser_gen_dataset.set_defaults(func=gen_dataset.run)
 
     # List artists
     parser_list_artists = subparsers.add_parser('list-artists')
@@ -83,9 +84,12 @@ def main():
     if len(sys.argv) < 2:
         parser.print_usage()
         sys.exit(1)
-
-    args = parser.parse_args()
-    args.func(args)
+    try:
+        args = parser.parse_args()
+        args.func(args)
+    except NeuralSeqUnrecognisedArgException:
+        parser.print_usage()
+        sys.exit(1)
 
 
 if __name__ == '__main__':
