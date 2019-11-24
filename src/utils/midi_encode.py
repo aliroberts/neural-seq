@@ -1,5 +1,6 @@
 import math
 from collections import defaultdict
+import os
 from pathlib import Path
 
 import music21
@@ -128,6 +129,7 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
         encoded = already_encoded
 
     for fpath in files:
+        print(f'Processing {fpath}...')
         if gen_enc_filename(fpath) in encoded:
             print('Duplicate detected. Skipping...')
             continue
@@ -135,10 +137,12 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
         try:
             tracks = TrackCollection.load_from_file(
                 fpath, instrument_filter=instrument_filter)
-        except Exception:
+        except Exception as e:
+            print(instrument_filter)
+            raise
             print('Unable to load file, skipping...')
             continue
-        print(f'DONE (found {len(tracks.tracks)} track matching filter)')
+        print(f'DONE (found {len(tracks.tracks)} tracks matching filter)')
         for track_title, track in tracks.tracks.items():
             print(f'----> Encoding {track_title}')
             try:

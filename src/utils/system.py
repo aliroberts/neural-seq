@@ -15,6 +15,14 @@ def copyfile(src, dest):
         shutil.copy(src, dest)
 
 
+def dir_names(dir):
+    dirs = []
+    for fname in os.listdir(dir):
+        if os.path.isdir(os.path.join(os.path.abspath(dir), fname)):
+            dirs.append(fname)
+    return dirs
+
+
 def ensure_dir_exists(path):
     """ Ensure that a directory at the given path exists """
     try:
