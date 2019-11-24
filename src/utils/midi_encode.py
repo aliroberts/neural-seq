@@ -65,7 +65,7 @@ class Track(object):
 
     def encode_many(self, rng=(24, 75)):
         """
-        Returns a list of enccodings that fit between the provided range and preserve the original
+        Returns a list of encodings that fit between the provided range and preserve the original
         note relationships (if any can).
         """
         rng_min, rng_max = rng
@@ -111,5 +111,50 @@ class TrackCollection(object):
         return cls.load(stream, instrument_filter=instrument_filter)
 
 
-def run(args):
-    pass
+def gen_enc_filename(fpath):
+    return os.path.basename(fpath).split('.')[0]
+
+
+def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(24, 75),
+                      no_transpose=False, ignore_duplicates=True, already_encoded=None, gen_enc_filename=gen_enc_filename):
+    """
+    Takes a list of midi file paths and an output destination in which to save the encodings.
+    """
+    # Keep track of the files that we've successfully encoded so that we don't end up encoding a duplicate
+    # file (there are several different versions of the the name track in the cleaned MIDI dataset, for example)
+    if not already_encoded:
+        encoded = []
+    else:
+        encoded = already_encoded
+
+    for fpath in files:
+        if gen_enc_filename(fpath) in encoded:
+            print('Duplicate detected. Skipping...')
+            continue
+        out_name = Path(os.path.basename(fpath)).with_suffix('')
+        try:
+            tracks = TrackCollection.load_from_file(
+                fpath, instrument_filter=instrument_filter)
+        except Exception:
+            print('Unable to load file, skipping...')
+            continue
+        print(f'DONE (found {len(tracks.tracks)} track matching filter)')
+        for track_title, track in tracks.tracks.items():
+            print(f'----> Encoding {track_title}')
+            try:
+                if no_transpose:
+                    encoded = [track.encode()]
+                else:
+                    encoded = track.encode_many(midi_range)
+            except ValueError:
+                print('Encoding failed. Skipping...')
+                continue
+
+            if ignore_duplicates:
+                encoded.append(gen_enc_filename(fpath))
+
+            print(f'----> Writing files ({len(encoded)}) to {dest}')
+            for i, enc in enumerate(encoded):
+                with open(dest/f'{out_name}-{i+1}.txt', 'w') as f:
+                    f.write(','.join(enc))
+            print('----> DONE')

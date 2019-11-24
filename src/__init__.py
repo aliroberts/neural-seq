@@ -1,0 +1,2 @@
+class NeuralSeqException(Exception):
+    pass
