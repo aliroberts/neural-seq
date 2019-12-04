@@ -2,6 +2,8 @@ import math
 import os
 import random
 from pathlib import Path
+import shutil
+import sys
 
 import pandas as pd
 
@@ -9,7 +11,7 @@ from src import NeuralSeqUnrecognisedArgException
 
 from src.utils.midi_data import midi_data_required
 from src.utils.midi_encode import encode_midi_files, gen_enc_filename
-from src.utils.system import copyfile, dir_names, ensure_dir_exists
+from src.utils.system import copyfile, dir_names, ensure_dir_exists, yn
 from src.constants import MIDI_ARTISTS
 
 
@@ -70,6 +72,16 @@ def run(args):
 
     def instrument_filter(
         instrument): return args.instrument_filter in str(instrument).lower()
+
+    if os.path.isdir(dest):
+        should_delete_dir = yn(
+            f'The destination directory {dest} already exists, would you like to delete it? If you do not delete it, new files will be added to it and any old ones will be kept. [y/n] ')
+        if should_delete_dir:
+            try:
+                shutil.rmtree(dest)
+            except OSError as e:
+                print(f'An error occurred: {e.filename} - {e.strerror}.')
+                sys.exit(1)
 
     if artists_file:
         with open(artists_file) as f:
