@@ -123,14 +123,10 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
     """
     # Keep track of the files that we've successfully encoded so that we don't end up encoding a duplicate
     # file (there are several different versions of the the same track in the cleaned MIDI dataset, for example)
-    if not already_encoded:
-        encoded = []
-    else:
-        encoded = already_encoded
-
+    ignore = already_encoded.copy() if already_encoded else []
     for fpath in files:
         print(f'Processing {fpath}...')
-        if gen_enc_filename(fpath) in encoded:
+        if gen_enc_filename(fpath) in ignore:
             print('Duplicate detected. Skipping...')
             continue
         out_name = Path(os.path.basename(fpath)).with_suffix('')
@@ -155,10 +151,10 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
                 continue
 
             if ignore_duplicates:
-                encoded.append(gen_enc_filename(fpath))
+                ignore.append(gen_enc_filename(fpath))
 
             print(f'----> Writing files ({len(encoded)}) to {dest}')
             for i, enc in enumerate(encoded):
-                with open(dest/f'{out_name}-{i+1}.txt', 'w') as f:
+                with open(Path(dest)/f'{out_name}-{i+1}.txt', 'w') as f:
                     f.write(','.join(enc))
             print('----> DONE')

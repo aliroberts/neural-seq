@@ -32,7 +32,7 @@ def gen_dataset_from_artists(artists, dest, instrument_filter, no_transpose=Fals
                    for fname in os.listdir(save_all_to)]
 
     encode_midi_files(
-        list(midi_files), save_all_to, instrument_filter=instrument_filter, no_transpose=False, already_encoded=encoded)
+        list(midi_files), save_all_to, instrument_filter=instrument_filter, no_transpose=no_transpose, already_encoded=encoded)
 
     # Once we've encoded all the files we can, split them up into valid, train and test directories
     encoded = [(Path(dest)/'all')/enc for enc in os.listdir(save_all_to)]
@@ -62,7 +62,7 @@ def gen_dataset_from_csv(csv_file, dest, instrument_filter, no_transpose=False):
         save_to = Path(dest)/type_
         ensure_dir_exists(save_to)
         encode_midi_files(
-            list(filtered['file']), save_to, instrument_filter=instrument_filter, no_transpose=False)
+            list(filtered['file']), save_to, instrument_filter=instrument_filter, no_transpose=no_transpose)
 
 
 def run(args):

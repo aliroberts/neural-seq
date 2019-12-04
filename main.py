@@ -19,11 +19,15 @@ def main():
     # Encoding of MIDI files to string format
     parser_encode = subparsers.add_parser('encode')
     parser_encode.add_argument(
-        '--files', default=None, help='A text file containing a newline delimited list of files to encode.', type=str)
+        '--dir', default=None, help='A directory containing the MIDI files that should be encoded.', type=str)
     parser_encode.add_argument(
-        '--dirs', default=None, help='A text file containing a newline delimited list of directories containing files to encode.', type=str)
+        '--file', default=None, help='A MIDI file that should be encoded.', type=str)
     parser_encode.add_argument('--dest', default=None, required=True,
                                help='A text file containing a newline delimited list of directories containing files to encode.', type=str)
+    parser_encode.add_argument('--instrument-filter', default='bass',
+                               help='A filter to be applied to the instrument name in the MIDI file', type=str)
+    parser_encode.add_argument('--no-transpose', default=False, action='store_true',
+                               help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
     parser_encode.set_defaults(func=encode.run)
 
     # Data fetching
@@ -40,7 +44,7 @@ def main():
                                     help='Where to output the dataset', type=str)
     parser_gen_dataset.add_argument('--instrument-filter', default='bass',
                                     help='A filter to be applied to the instrument name in the MIDI file', type=str)
-    parser_gen_dataset.add_argument('--no-transpose', default=False, action='store_false',
+    parser_gen_dataset.add_argument('--no-transpose', default=False, action='store_true',
                                     help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
     parser_gen_dataset.set_defaults(func=gen_dataset.run)
 
