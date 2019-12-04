@@ -14,6 +14,12 @@ def main():
 
     # Decoding of string format to MIDI file
     parser_decode = subparsers.add_parser('decode')
+    parser_decode.add_argument(
+        '--dir', default=None, help='A directory containing the files that should be decoded.', type=str)
+    parser_decode.add_argument(
+        '--file', default=None, help='A file that should be decoded.', type=str)
+    parser_decode.add_argument('--dest', default=None, required=True,
+                               help='The directory to save the decoded MIDI file(s).', type=str)
     parser_decode.set_defaults(func=decode.run)
 
     # Encoding of MIDI files to string format
@@ -23,7 +29,7 @@ def main():
     parser_encode.add_argument(
         '--file', default=None, help='A MIDI file that should be encoded.', type=str)
     parser_encode.add_argument('--dest', default=None, required=True,
-                               help='A text file containing a newline delimited list of directories containing files to encode.', type=str)
+                               help='The directory to save the encodings of the specified MIDI file(s).', type=str)
     parser_encode.add_argument('--instrument-filter', default='bass',
                                help='A filter to be applied to the instrument name in the MIDI file', type=str)
     parser_encode.add_argument('--no-transpose', default=False, action='store_true',

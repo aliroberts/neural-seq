@@ -2,6 +2,7 @@ import math
 from collections import defaultdict
 import os
 from pathlib import Path
+import sys
 
 import music21
 
@@ -158,3 +159,21 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
                 with open(Path(dest)/f'{out_name}-{i+1}.txt', 'w') as f:
                     f.write(','.join(enc))
             print('----> DONE')
+
+
+def decode_files(files, dest, tempo=120):
+    for fpath in files:
+        with open(fpath) as f:
+            enc_seq = f.read()
+        print(f'Decoding {fpath}')
+        dec_notes = Track.decode_notes(enc_seq)
+        dec_stream = music21.stream.Stream()
+        t = music21.tempo.MetronomeMark(number=tempo)
+        dec_stream.append(t)
+        for note in dec_notes:
+            dec_stream.append(note)
+        out_fname = os.path.splitext(fpath)[0] + '.mid'
+        out_path = Path(dest)/os.path.basename(out_fname)
+        print(f'----> Writing file to {out_path}')
+        dec_stream.write('midi', out_path)
+        print('----> DONE')

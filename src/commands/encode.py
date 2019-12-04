@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import sys
 
 from src.utils.midi_encode import encode_midi_files, gen_enc_filename
 from src.utils.system import ensure_dir_exists
@@ -21,7 +22,7 @@ def run(args):
                       if Path(fname).suffix in ('.mid',)]
     else:
         # Encode a single MIDI file
-        midi_files = [Path(fname)]
+        midi_files = [Path(midi_file)]
     dest = args.dest
     ensure_dir_exists(dest)
     encode_midi_files(
