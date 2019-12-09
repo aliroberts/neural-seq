@@ -65,7 +65,6 @@ def run(args):
         learn.load(args.pretrained)
 
     if args.resume:
-
         def extract_epochs(dir):
             epochs = []
             for fname in os.listdir(dir):
@@ -84,6 +83,8 @@ def run(args):
         else:
             latest_epoch = 0
             print('No pretrained models found')
+    else:
+        latest_epoch = 0
 
     epochs = args.epochs
     save_freq = args.save_freq if args.save_freq > 0 else epochs
