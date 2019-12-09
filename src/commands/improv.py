@@ -1,10 +1,12 @@
-import os
-from pathlib import Path
 
-from fastai.text import *
 import music21
-
+from fastai.text import *
+from pathlib import Path
+import os
 from src.utils.midi_encode import Track
+
+
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 
 
 def generate_seq(start, learner, length):
