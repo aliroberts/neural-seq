@@ -3,7 +3,7 @@ import argparse
 import sys
 
 from src import NeuralSeqUnrecognisedArgException
-from src.commands import encode, decode, fetch_data, gen_dataset, improv, list_artists, list_songs, train
+from src.commands import encode, decode, fetch_data, gen_dataset, improv, list_artists, list_songs, play_midi, train
 
 from src.constants import DATA_DIR
 
@@ -62,6 +62,8 @@ def main():
                                help='Path to save the generated MIDI sequence', type=str)
     parser_improv.add_argument('--seq', default=16,
                                help='Length of musical sequence to produce (quarter notes)', type=int)
+    parser_improv.add_argument('--prompt', default='',
+                               help='A comma-delimited string of encoded tokens', type=str)
     parser_improv.add_argument('--loop', default=4,
                                help='Number of times to loop the generated sequence', type=int)
     parser_improv.add_argument('--tempo', default=120,
@@ -81,6 +83,14 @@ def main():
     parser_list_songs.add_argument('--artist', required=True, default=None,
                                    help='List songs for a given artist (exact match, case sensitive)', type=str)
     parser_list_songs.set_defaults(func=list_songs.run)
+
+    # Play MIDI
+    parser_play_midi = subparsers.add_parser('play-midi')
+    parser_play_midi.add_argument('midi_file',
+                                  help='Play the specified MIDI file from the terminal', type=str)
+    parser_play_midi.add_argument('--instrument-filter', default=None,
+                                  help='A filter to be applied to the instrument name in the MIDI file', type=str)
+    parser_play_midi.set_defaults(func=play_midi.run)
 
     # Training
     parser_train = subparsers.add_parser('train')

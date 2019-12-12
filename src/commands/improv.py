@@ -35,7 +35,7 @@ def run(args):
 
     learn = load_learner(model_dir, fname)
 
-    enc_seq = generate_seq('', learn, args.seq)
+    enc_seq = generate_seq(args.prompt, learn, args.seq)
     tokens = convert_output(enc_seq) * args.loop
 
     dec_seq = Track.decode_notes(tokens)
