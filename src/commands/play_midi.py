@@ -10,22 +10,14 @@ def run(args):
     stream = music21.midi.translate.midiFileToStream(mf)
 
     if args.instrument_filter:
-        note_seq = []
-        instrument_stream = music21.stream.Stream()
-        def instrument_filter(
-            instrument): return args.instrument_filter in str(instrument).lower()
-
-        loading_instrument = False
-        for action in stream.recurse(classFilter=('Note', 'Rest')):
-            instrument = action.activeSite.getInstrument()
-            if instrument_filter and not instrument_filter(instrument):
-                if loading_instrument:
-                    break
-                else:
-                    continue
-            loading_instrument = True
-            instrument_stream.append(action)
-        stream = instrument_stream
-
+        stream = music21.instrument.partitionByInstrument(stream)
+        for p in stream.parts:
+            if p.partName and args.instrument_filter in p.partName.lower():
+                # See https://web.mit.edu/music21/doc/moduleReference/moduleInstrument.html for more info
+                p.makeRests(inPlace=True, hideRests=True)
+                p.makeMeasures(inPlace=True)
+                p.makeTies(inPlace=True)
+                stream = p
+                break
     sp = music21.midi.realtime.StreamPlayer(stream)
     sp.play()

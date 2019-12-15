@@ -22,4 +22,4 @@ def run(args):
         enc_files = [Path(enc_file)]
     dest = args.dest
     ensure_dir_exists(dest)
-    decode_files(enc_files, dest)
+    decode_files(enc_files, dest, args.tempo)
