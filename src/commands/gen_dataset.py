@@ -17,7 +17,7 @@ from src.constants import MIDI_ARTISTS
 
 @midi_data_required
 def gen_dataset_from_artists(artists, dest, instrument_filter, no_transpose=False,
-                             valid=0.2, test=0, skip_existing=True):
+                             valid=0, test=0, skip_existing=True):
     midi_files = []
     for artist in artists:
         song_dir = MIDI_ARTISTS/artist
@@ -31,7 +31,7 @@ def gen_dataset_from_artists(artists, dest, instrument_filter, no_transpose=Fals
         encoded = [gen_enc_filename(fname)
                    for fname in os.listdir(save_all_to)]
 
-    encode_midi_files(
+    vocab = encode_midi_files(
         list(midi_files), save_all_to, instrument_filter=instrument_filter, no_transpose=no_transpose, already_encoded=encoded)
 
     # Once we've encoded all the files we can, split them up into valid, train and test directories
@@ -54,15 +54,22 @@ def gen_dataset_from_artists(artists, dest, instrument_filter, no_transpose=Fals
         for fname in fnames:
             copyfile(fname, save_to)
 
+    with open(Path(dest)/'vocab', 'w') as f:
+        f.write(','.join(vocab))
+
 
 def gen_dataset_from_csv(csv_file, dest, instrument_filter, no_transpose=False):
     df = pd.read_csv(csv_file)
+    vocab = set()
     for type_ in ('train', 'valid', 'test'):
         filtered = df[df['type'] == type_]
         save_to = Path(dest)/type_
         ensure_dir_exists(save_to)
-        encode_midi_files(
+        set_vocab = encode_midi_files(
             list(filtered['file']), save_to, instrument_filter=instrument_filter, no_transpose=no_transpose)
+        vocab = vocab.union(set_vocab)
+    with open(Path(dest)/'vocab', 'w') as f:
+        f.write(','.join(vocab))
 
 
 def run(args):
@@ -89,10 +96,10 @@ def run(args):
         gen_dataset_from_artists(
             artists, dest,
             instrument_filter,
-            no_transpose=args.no_transpose)
+            no_transpose=args.no_transpose, valid=args.valid, test=args.test)
     elif midi_files_csv:
         gen_dataset_from_csv(midi_files_csv, dest,
                              instrument_filter=ainstrument_filter,
-                             no_transpose=args.no_transpose)
+                             no_transpose=args.no_transpose,)
     else:
         raise NeuralSeqUnrecognisedArgException

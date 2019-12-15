@@ -37,9 +37,13 @@ def run(args):
     print('Loading data...')
     data_lm_path = dest_dir/'data_lm_export.pkl'
 
+    with open(Path(args.data_dir)/'vocab', 'r') as f:
+        vocab = Vocab(f.read().split(','))
+
     if args.cache:
         data_lm = TextLMDataBunch.from_folder(
             args.data_dir, tokenizer=CustomTokenizer(), include_bos=False,
+            vocab=vocab,
             include_eos=False, bs=args.bs)
         data_lm.save(data_lm_path)
     else:
@@ -49,7 +53,7 @@ def run(args):
             print('No pickled databunch found, generating a new one')
             data_lm = TextLMDataBunch.from_folder(
                 args.data_dir, tokenizer=CustomTokenizer(), include_bos=False,
-                include_eos=False, bs=args.bs)
+                include_eos=False, bs=args.bs, vocab=vocab)
             data_lm.save(data_lm_path)
 
     print('Training...')

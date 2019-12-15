@@ -54,6 +54,10 @@ def main():
                                     help='A filter to be applied to the instrument name in the MIDI file', type=str)
     parser_gen_dataset.add_argument('--no-transpose', default=False, action='store_true',
                                     help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
+    parser_gen_dataset.add_argument('--valid', default=0,
+                                    help='Proportion of the input files to reserve for the validation set (Default 0)', type=float)
+    parser_gen_dataset.add_argument('--test', default=0,
+                                    help='Proportion of the input files to reserve for the test set (Default 0)', type=float)
     parser_gen_dataset.set_defaults(func=gen_dataset.run)
 
     # Music generation

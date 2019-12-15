@@ -46,20 +46,6 @@ class Track(object):
                 encoded[offset + i + 1] = f'H-{midi_pitch}'
         return encoded
 
-        # for note in notes:
-        #     # NOTE: We'll make a sort of crude approximation of the musical sequence here
-        #     # Passing in a quantized stream will help reduce these though. Further thought required.
-        #     duration = math.floor(note.duration.quarterLength * sample_freq)
-
-        #     if isinstance(note, music21.note.Note):
-        #         midi_pitch = note.pitch.midi + transpose
-        #         tok = f'S-{midi_pitch}'
-        #         encoded.append(tok)
-        #         encoded += [f'H-{midi_pitch}' for _ in range(duration - 1)]
-        #     elif isinstance(note, music21.note.Rest):
-        #         encoded += ['R' for _ in range(duration)]
-        # return encoded
-
     @staticmethod
     def decode_notes(enc_notes, sample_freq=4):
         """
@@ -73,17 +59,23 @@ class Track(object):
         duration_inc = 1 / sample_freq
 
         for enc in enc_notes:
-            if 'S-' in enc:
-                curr_note = music21.note.Note()
-                notes.append(curr_note)
-                curr_note.pitch.midi = int(enc.replace('S-', ''))
-                curr_note.duration = music21.duration.Duration(duration_inc)
-            elif 'H-' in enc:
-                curr_note.duration.quarterLength += duration_inc
-            elif 'R' in enc:
-                curr_note = music21.note.Rest()
-                notes.append(curr_note)
-                curr_note.duration = music21.duration.Duration(duration_inc)
+            try:
+                if 'S-' in enc:
+                    curr_note = music21.note.Note()
+                    notes.append(curr_note)
+                    curr_note.pitch.midi = int(enc.replace('S-', ''))
+                    curr_note.duration = music21.duration.Duration(
+                        duration_inc)
+                elif 'H-' in enc:
+                    curr_note.duration.quarterLength += duration_inc
+                elif 'R' in enc:
+                    curr_note = music21.note.Rest()
+                    notes.append(curr_note)
+                    curr_note.duration = music21.duration.Duration(
+                        duration_inc)
+            except:
+                import ipdb
+                ipdb.set_trace()
         return notes
 
     def __init__(self, name, stream):
@@ -148,16 +140,6 @@ class TrackCollection(object):
             tracks.append(Track(p.partName, p))
         return cls(tracks)
 
-        # for action in stream.recurse(classFilter=('Note', 'Rest')):
-        #     instrument = action.activeSite.getInstrument()
-        #     if instrument_filter and not instrument_filter(instrument):
-        #         continue
-
-        #     instr_name = str(instrument)
-        #     note_seqs[instr_name].append(action)
-
-        # return cls({instr_name: Track(instr_name, notes) for intr_name, notes in note_seqs.items()})
-
     @classmethod
     def load_from_file(cls, fname, instrument_filter=None):
         with open(fname, 'rb') as f:
@@ -180,6 +162,7 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
     # Keep track of the files that we've successfully encoded so that we don't end up encoding a duplicate
     # file (there are several different versions of the the same track in the cleaned MIDI dataset, for example)
     ignore = already_encoded.copy() if already_encoded else []
+    vocab = set()
     for fpath in files:
         print(f'Processing {fpath}...')
         if gen_enc_filename(fpath) in ignore:
@@ -213,9 +196,11 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
 
             print(f'----> Writing files ({len(encoded)}) to {dest}')
             for i, enc in enumerate(encoded):
+                vocab = vocab.union(set(enc))
                 with open(Path(dest)/f'{out_name}-{i+1}.txt', 'w') as f:
                     f.write(','.join(enc))
             print('----> DONE')
+    return list(vocab)
 
 
 def decode_files(files, dest, tempo=120):
