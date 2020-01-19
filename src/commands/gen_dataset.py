@@ -10,7 +10,7 @@ import pandas as pd
 from src import NeuralSeqUnrecognisedArgException
 
 from src.utils.midi_data import midi_data_required
-from src.utils.midi_encode import encode_midi_files, fetch_encoder, gen_enc_filename,
+from src.utils.midi_encode import encode_midi_files, fetch_encoder, gen_enc_filename
 from src.utils.system import copyfile, dir_names, ensure_dir_exists, yn
 from src.constants import MIDI_ARTISTS
 

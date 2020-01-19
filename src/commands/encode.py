@@ -27,4 +27,4 @@ def run(args):
     dest = args.dest
     ensure_dir_exists(dest)
     encode_midi_files(
-        list(midi_files), dest=dest, encoder, instrument_filter=instrument_filter, no_transpose=args.no_transpose)
+        list(midi_files), dest, encoder, instrument_filter=instrument_filter, no_transpose=args.no_transpose)

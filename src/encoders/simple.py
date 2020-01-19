@@ -1,8 +1,12 @@
+import math
+
+import music21
+
 from src.utils.midi_encode import BaseEncoder
 
 
 class SimpleEncoder(BaseEncoder):
-    def encode(self, sample_freq, transpose):
+    def encode(self, stream, sample_freq=4, transpose=0):
         # Monophonic encoding
         # Iterate through the notes/chords/rests. When we encounter a note, add it to the list of encoded notes
         # along with its duration. When we encounter a new event a few things might happen:
@@ -36,7 +40,7 @@ class SimpleEncoder(BaseEncoder):
                 encoded[offset + i + 1] = f'H-{midi_pitch}'
         return encoded
 
-    def decode(self, sample_freq):
+    def decode(self, enc_notes, sample_freq=4):
         if isinstance(enc_notes, str):
             enc_notes = enc_notes.split(',')
         notes = []
@@ -58,3 +62,17 @@ class SimpleEncoder(BaseEncoder):
                 curr_note.duration = music21.duration.Duration(
                     duration_inc)
         return notes
+
+    def process_prediction(self, prediction):
+        print(prediction)
+        tokens = prediction
+        prev_tok = None
+
+        cleaned = []
+        for t in tokens:
+            if prev_tok and prev_tok[0] == 'H' and t[0] == 'H':
+                if prev_tok.split('-')[1] != t.split('-')[1]:
+                    t = t.replace('H', 'S')
+            cleaned.append(t)
+            prev_tok = t
+        return cleaned

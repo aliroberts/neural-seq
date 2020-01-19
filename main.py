@@ -1,10 +1,12 @@
 
 import argparse
+from functools import partial
 import sys
 
 from src import NeuralSeqUnrecognisedArgException
 from src.commands import encode, decode, fetch_data, gen_dataset, improv, list_artists, list_songs, play_midi, train
-
+from src.utils.models import fetch_model
+from src.utils.system import get_kwarg_dict
 from src.constants import DATA_DIR
 
 
@@ -70,6 +72,8 @@ def main():
     parser_improv = subparsers.add_parser('improv')
     parser_improv.add_argument('--model', required=True,
                                help='Path to the saved model to use for generation', type=str)
+    parser_improv.add_argument('--encoder', required=True,
+                               help='The filename of the encoder to use', type=str)
     parser_improv.add_argument('--rec',
                                help='Path to save the generated MIDI sequence', type=str)
     parser_improv.add_argument('--seq', default=16,
@@ -108,27 +112,36 @@ def main():
 
     # Training
     parser_train = subparsers.add_parser('train')
+    parser_train.add_argument('--model', required=True, type=str)
     parser_train.add_argument('--data-dir', required=True)
     parser_train.add_argument('--dest', required=True,
                               help='Directory in which to save model snapshots')
-    parser_train.add_argument('--dropout', default=1,
-                              help='Dropout multiplier', type=float)
-    parser_train.add_argument(
-        '--pretrained', default=None, help='Model with which to start training', type=str)
-    parser_train.add_argument('--bs', default=32, help='Batch size', type=int)
-    parser_train.add_argument('--bptt', default=200, help='BPTT', type=int)
-    parser_train.add_argument('--drop-mult', default=1,
-                              help='Droput multiplier (default 1)', type=int)
-    parser_train.add_argument('--emb-sz', default=300,
-                              help='Embedding size (default 300)', type=int)
-    parser_train.add_argument('--max-lr', default=5e-3,
-                              help='Maximum learning rate when using one-cycle policy', type=float)
-    parser_train.add_argument(
-        '--nhid', default=600, help='Number of hidden activations (default 600)', type=int)
-    parser_train.add_argument(
-        '--nlayers', default=4, help='Number of LSTM layers (default 4)', type=int)
     parser_train.add_argument('--epochs', default=10,
                               help='Epochs to train model for (default 10)', type=int),
+    parser_train.add_argument('--bs', default=32, help='Batch size', type=int)
+    parser_train.add_argument('--bptt', default=200, help='BPTT', type=int)
+
+    model_kwargs = {}
+    train_kwargs = {}
+
+    if sys.argv[1] == 'train':
+        model_args = parser_train.parse_known_args()
+        _, train_func, model_kwargs = fetch_model(model_args[0].model)
+
+        train_kwargs = get_kwarg_dict(train_func)
+
+        parser_train.add_argument(
+            '--pretrained', default=None, help='Model with which to start training', type=str)
+
+        # Add any model kwargs and train function kwargs as command line options
+        for arg, default in model_kwargs.items():
+            parser_train.add_argument(
+                f'--{arg}', default=default, type=type(default))
+
+        for arg, default in train_kwargs.items():
+            parser_train.add_argument(
+                f'--{arg}', default=default, type=type(default))
+
     parser_train.add_argument(
         '--save-freq', default=0, help='Frequency at which to save model snapshots (every SAVE_FREQ epochs)', type=int)
     parser_train.add_argument(
@@ -137,7 +150,9 @@ def main():
         '--cache', default=False, action='store_true', help='Update the cached data bunch (use when updating the batch size!)')
     parser_train.add_argument(
         '--resume', default=False, action='store_true', help='Resume from the latest epoch (determined by model name <prefix>-epoch-<epoch>)')
-    parser_train.set_defaults(func=train.run)
+
+    parser_train.set_defaults(func=partial(
+        train.run, model_kwargs=model_kwargs, train_kwargs=train_kwargs))
 
     if len(sys.argv) < 2:
         parser.print_usage()

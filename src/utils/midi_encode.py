@@ -11,25 +11,31 @@ from src.utils.system import fetch_class_from_file
 
 
 class BaseEncoder(object):
-    def encode(self, sample_freq, transpose):
+    def encode(self, stream, sample_freq, transpose=0):
         """
         Return a list-of-strings representation of the notes for downstream tasks (language modeling)
         """
         raise NotImplementedError
 
-    def decode(self, sample_freq):
+    def decode(self, enc_notes, sample_freq=4):
         """
         Return a list of music21.note.Note/Rest instances from a list-of-strings representation sampled at the
         specified sample frequency.
         """
         raise NotImplementedError
 
+    def process_prediction(self, prediction):
+        """
+        Perform any post-processing of a raw prediction from a model before it is passed to the decoder
+        """
+        return prediction
+
 
 def fetch_encoder(name):
     """
     Provide the filename of the encoder and locate it in the ENCODER_DIR. Return the encoder class.
     """
-    return fetch_class_from_file(ENCODER_DIR, name.replace('.py', ''), BaseEncoder)
+    return fetch_class_from_file(ENCODER_DIR, name.replace('.py', ''), BaseEncoder, strict=True)
 
 
 class Track(object):
