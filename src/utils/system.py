@@ -6,8 +6,8 @@ import tempfile
 from contextlib import contextmanager
 
 
-def fetch_class_from_file(dir, module_name, class_):
-    module_path = str('src.models.rnn').replace('/', '.') + module_name
+def fetch_class_from_file(dir_, module_name, class_):
+    module_path = str(dir_).replace('/', '.') + module_name
     module = importlib.import_module(module_path)
     for attr in dir(module):
         candidate = getattr(module, attr)
