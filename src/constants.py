@@ -1,4 +1,6 @@
 
+import os
+
 from pathlib import Path
 
 DATA_DIR = Path('.data')
@@ -15,3 +17,7 @@ TEST_SET_DIR = DATASET_DIR/'test'
 
 # MIDI files (cleaned and sorted into artist directories)
 MIDI_DATA_URL = 'http://hog.ee.columbia.edu/craffel/lmd/clean_midi.tar.gz'
+
+# Configurable files
+MODEL_DIR = Path(os.environ.get('MODEL_DIR', 'src/models'))
+ENCODER_DIR = Path(os.environ.get('ENCODER_DIR', 'src/encoders'))

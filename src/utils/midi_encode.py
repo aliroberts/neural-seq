@@ -6,84 +6,40 @@ import sys
 
 import music21
 
+from src.constants import ENCODER_DIR
+from src.utils.system import fetch_class_from_file
 
-class Track(object):
-    @staticmethod
-    def encode_notes(stream, sample_freq=4, transpose=0):
+
+class BaseEncoder(object):
+    def encode(self, sample_freq, transpose):
         """
         Return a list-of-strings representation of the notes for downstream tasks (language modeling)
         """
-        # Monophonic encoding
-        # Iterate through the notes/chords/rests. When we encounter a note, add it to the list of encoded notes
-        # along with its duration. When we encounter a new event a few things might happen:
+        raise NotImplementedError
 
-        # i) The event occurs before the end of the previous event in which case we want to stop the previous event
-        # and trigger the new one.
-        # ii) The event occurs after the previous event has finished by some non-zero offset, in which case
-        # let's fill the gap with rests before we trigger the new one.
-        # iii) The event occurs exactly as the previous one finishes in which case let's simply trigger the new event.
-
-        # Iterate through the notes and snap them to our array.
-
-        # Default array with rest values
-        encoded = ['R' for _ in range(int(stream.duration.quarterLength * 4))]
-
-        for note in stream.notes:
-            offset = math.floor(note.offset * sample_freq)
-            duration = math.floor(note.duration.quarterLength * sample_freq)
-
-            if isinstance(note, music21.chord.Chord):
-                note = note.notes[0]
-
-            midi_pitch = note.pitch.midi + transpose
-
-            # Start note
-            tok = f'S-{midi_pitch}'
-            encoded[offset] = tok
-
-            # Hold note
-            for i in range(duration - 1):
-                encoded[offset + i + 1] = f'H-{midi_pitch}'
-        return encoded
-
-    @staticmethod
-    def decode_notes(enc_notes, sample_freq=4):
+    def decode(self, sample_freq):
         """
         Return a list of music21.note.Note/Rest instances from a list-of-strings representation sampled at the
         specified sample frequency.
         """
-        if isinstance(enc_notes, str):
-            enc_notes = enc_notes.split(',')
-        notes = []
-        curr_note = None
-        duration_inc = 1 / sample_freq
+        raise NotImplementedError
 
-        for enc in enc_notes:
-            try:
-                if 'S-' in enc:
-                    curr_note = music21.note.Note()
-                    notes.append(curr_note)
-                    curr_note.pitch.midi = int(enc.replace('S-', ''))
-                    curr_note.duration = music21.duration.Duration(
-                        duration_inc)
-                elif 'H-' in enc:
-                    curr_note.duration.quarterLength += duration_inc
-                elif 'R' in enc:
-                    curr_note = music21.note.Rest()
-                    notes.append(curr_note)
-                    curr_note.duration = music21.duration.Duration(
-                        duration_inc)
-            except:
-                import ipdb
-                ipdb.set_trace()
-        return notes
 
-    def __init__(self, name, stream):
+def fetch_encoder(name):
+    """
+    Provide the filename of the encoder and locate it in the ENCODER_DIR. Return the encoder class.
+    """
+    return fetch_class_from_file(ENCODER_DIR, name.replace('.py', ''), BaseEncoder)
+
+
+class Track(object):
+    def __init__(self, name, stream, encoder):
         self.name = name
         self.stream = stream  # music21.stream.Stream()
+        self.encoder = encoder
 
     def encode(self, transpose=0):
-        return self.encode_notes(self.stream, transpose=transpose)
+        return self.encoder.encode(self.stream, transpose=transpose)
 
     def track_range(self):
         pitches = [note.pitch.midi for note in self.stream.notes if isinstance(
@@ -122,7 +78,7 @@ class TrackCollection(object):
         self.tracks = tracks
 
     @classmethod
-    def load(cls, stream, instrument_filter=None):
+    def load(cls, stream, encoder, instrument_filter=None):
         """
         Load a track collection with a collection of parts for each instrument
         """
@@ -137,24 +93,24 @@ class TrackCollection(object):
             # p.makeRests(inPlace=True, hideRests=True)
             # p.makeMeasures(inPlace=True)
             # p.makeTies(inPlace=True)
-            tracks.append(Track(p.partName, p))
+            tracks.append(Track(p.partName, p, encoder))
         return cls(tracks)
 
     @classmethod
-    def load_from_file(cls, fname, instrument_filter=None):
+    def load_from_file(cls, fname, encoder, instrument_filter=None):
         with open(fname, 'rb') as f:
             mf = music21.midi.MidiFile()
             mf.openFileLike(f)
             mf.read()
         stream = music21.midi.translate.midiFileToStream(mf)
-        return cls.load(stream, instrument_filter=instrument_filter)
+        return cls.load(stream, encoder, instrument_filter=instrument_filter)
 
 
 def gen_enc_filename(fpath):
     return os.path.basename(fpath).split('.')[0]
 
 
-def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(24, 75),
+def encode_midi_files(files, dest, encoder, prefix='', instrument_filter='', midi_range=(24, 75),
                       no_transpose=False, ignore_duplicates=True, already_encoded=None, gen_enc_filename=gen_enc_filename):
     """
     Takes a list of midi file paths and an output destination in which to save the encodings.
@@ -171,7 +127,7 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
         out_name = Path(os.path.basename(fpath)).with_suffix('')
         try:
             track_collection = TrackCollection.load_from_file(
-                fpath, instrument_filter=instrument_filter)
+                fpath, encoder, instrument_filter=instrument_filter)
         except Exception as e:
             print(instrument_filter)
             raise
@@ -203,12 +159,12 @@ def encode_midi_files(files, dest, prefix='', instrument_filter='', midi_range=(
     return list(vocab)
 
 
-def decode_files(files, dest, tempo=120):
+def decode_files(files, dest, encoder, tempo=120):
     for fpath in files:
         with open(fpath) as f:
             enc_seq = f.read()
         print(f'Decoding {fpath}')
-        dec_notes = Track.decode_notes(enc_seq)
+        dec_notes = encoder.decode(enc_seq)
         dec_stream = music21.stream.Stream()
         t = music21.tempo.MetronomeMark(number=tempo)
         dec_stream.append(t)

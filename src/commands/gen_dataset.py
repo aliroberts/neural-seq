@@ -10,13 +10,13 @@ import pandas as pd
 from src import NeuralSeqUnrecognisedArgException
 
 from src.utils.midi_data import midi_data_required
-from src.utils.midi_encode import encode_midi_files, gen_enc_filename
+from src.utils.midi_encode import encode_midi_files, fetch_encoder, gen_enc_filename,
 from src.utils.system import copyfile, dir_names, ensure_dir_exists, yn
 from src.constants import MIDI_ARTISTS
 
 
 @midi_data_required
-def gen_dataset_from_artists(artists, dest, instrument_filter, no_transpose=False,
+def gen_dataset_from_artists(artists, dest, encoder, instrument_filter, no_transpose=False,
                              valid=0, test=0, skip_existing=True):
     midi_files = []
     for artist in artists:
@@ -32,7 +32,7 @@ def gen_dataset_from_artists(artists, dest, instrument_filter, no_transpose=Fals
                    for fname in os.listdir(save_all_to)]
 
     vocab = encode_midi_files(
-        list(midi_files), save_all_to, instrument_filter=instrument_filter, no_transpose=no_transpose, already_encoded=encoded)
+        list(midi_files), save_all_to, encoder, instrument_filter=instrument_filter, no_transpose=no_transpose, already_encoded=encoded)
 
     # Once we've encoded all the files we can, split them up into valid, train and test directories
     encoded = [(Path(dest)/'all')/enc for enc in os.listdir(save_all_to)]
@@ -58,7 +58,7 @@ def gen_dataset_from_artists(artists, dest, instrument_filter, no_transpose=Fals
         f.write(','.join(vocab))
 
 
-def gen_dataset_from_csv(csv_file, dest, instrument_filter, no_transpose=False):
+def gen_dataset_from_csv(csv_file, dest, encoder, instrument_filter, no_transpose=False):
     df = pd.read_csv(csv_file)
     vocab = set()
     for type_ in ('train', 'valid', 'test'):
@@ -66,7 +66,7 @@ def gen_dataset_from_csv(csv_file, dest, instrument_filter, no_transpose=False):
         save_to = Path(dest)/type_
         ensure_dir_exists(save_to)
         set_vocab = encode_midi_files(
-            list(filtered['file']), save_to, instrument_filter=instrument_filter, no_transpose=no_transpose)
+            list(filtered['file']), save_to, encoder, instrument_filter=instrument_filter, no_transpose=no_transpose)
         vocab = vocab.union(set_vocab)
     with open(Path(dest)/'vocab', 'w') as f:
         f.write(','.join(vocab))
@@ -76,6 +76,8 @@ def run(args):
     artists_file = args.artists
     midi_files_csv = args.midi_files
     dest = args.dest
+
+    encoder = fetch_encoder(args.encoder)
 
     def instrument_filter(
         instrument): return args.instrument_filter in str(instrument).lower()
@@ -94,11 +96,11 @@ def run(args):
         with open(artists_file) as f:
             artists = [artist.replace('\n', '') for artist in f.readlines()]
         gen_dataset_from_artists(
-            artists, dest,
+            artists, dest, encoder,
             instrument_filter,
             no_transpose=args.no_transpose, valid=args.valid, test=args.test)
     elif midi_files_csv:
-        gen_dataset_from_csv(midi_files_csv, dest,
+        gen_dataset_from_csv(midi_files_csv, dest, encoder,
                              instrument_filter=ainstrument_filter,
                              no_transpose=args.no_transpose,)
     else:

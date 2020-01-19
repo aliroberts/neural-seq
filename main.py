@@ -14,6 +14,8 @@ def main():
 
     # Decoding of string format to MIDI file
     parser_decode = subparsers.add_parser('decode')
+    parser_decode.add_argument('--encoder',
+                               help='The filename of the encoder to use', type=str, required=True)
     parser_decode.add_argument(
         '--dir', default=None, help='A directory containing the files that should be decoded', type=str)
     parser_decode.add_argument(
@@ -26,6 +28,8 @@ def main():
 
     # Encoding of MIDI files to string format
     parser_encode = subparsers.add_parser('encode')
+    parser_encode.add_argument('--encoder',
+                               help='The filename of the encoder to use', type=str, required=True)
     parser_encode.add_argument(
         '--dir', default=None, help='A directory containing the MIDI files that should be encoded', type=str)
     parser_encode.add_argument(
@@ -50,6 +54,8 @@ def main():
         '--midi-files', default=None, help='A CSV with file, type={train, valid, test} columns to encode and split accordingly', type=str)
     parser_gen_dataset.add_argument('--dest', default=DATA_DIR/'dataset',
                                     help='Where to output the dataset', type=str)
+    parser_gen_dataset.add_argument('--encoder',
+                                    help='The filename of the encoder to use', type=str, required=True)
     parser_gen_dataset.add_argument('--instrument-filter', default='bass',
                                     help='A filter to be applied to the instrument name in the MIDI file', type=str)
     parser_gen_dataset.add_argument('--no-transpose', default=False, action='store_true',
@@ -63,7 +69,7 @@ def main():
     # Music generation
     parser_improv = subparsers.add_parser('improv')
     parser_improv.add_argument('--model', required=True,
-                               help='Path to the model to use for generation', type=str)
+                               help='Path to the saved model to use for generation', type=str)
     parser_improv.add_argument('--rec',
                                help='Path to save the generated MIDI sequence', type=str)
     parser_improv.add_argument('--seq', default=16,
@@ -116,7 +122,7 @@ def main():
     parser_train.add_argument('--emb-sz', default=300,
                               help='Embedding size (default 300)', type=int)
     parser_train.add_argument('--max-lr', default=5e-3,
-                              help='Maximum learning rate when using one-cycle policy', type=int)
+                              help='Maximum learning rate when using one-cycle policy', type=float)
     parser_train.add_argument(
         '--nhid', default=600, help='Number of hidden activations (default 600)', type=int)
     parser_train.add_argument(

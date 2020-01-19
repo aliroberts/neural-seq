@@ -1,9 +1,13 @@
+import importlib
 import os
 from pathlib import Path
 import sys
 
-from src.utils.midi_encode import decode_files
+from src.constants import ENCODER_DIR
+from src.utils.midi_encode import decode_files, fetch_encoder
 from src.utils.system import ensure_dir_exists
+
+import torch.nn as nn
 
 
 def run(args):
@@ -15,6 +19,8 @@ def run(args):
         print('Please specify a --dir xor --file')
         sys.exit(1)
 
+    encoder = fetch_encoder(args.encoder)
+
     if enc_dir:
         enc_files = [Path(enc_dir)/fname for fname in os.listdir(enc_dir)]
     else:
@@ -22,4 +28,4 @@ def run(args):
         enc_files = [Path(enc_file)]
     dest = args.dest
     ensure_dir_exists(dest)
-    decode_files(enc_files, dest, args.tempo)
+    decode_files(enc_files, encoder, dest, args.tempo)

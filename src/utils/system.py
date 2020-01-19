@@ -6,6 +6,15 @@ import tempfile
 from contextlib import contextmanager
 
 
+def fetch_class_from_file(dir, module_name, class_):
+    module_path = str('src.models.rnn').replace('/', '.') + module_name
+    module = importlib.import_module(module_path)
+    for attr in dir(module):
+        candidate = getattr(module, attr)
+        if isinstance(candidate, class_):
+            return candidate
+
+
 def copyfile(src, dest):
     # Preserve symlinks
     if os.path.islink(src):

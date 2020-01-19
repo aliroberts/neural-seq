@@ -2,13 +2,14 @@ import os
 from pathlib import Path
 import sys
 
-from src.utils.midi_encode import encode_midi_files, gen_enc_filename
+from src.utils.midi_encode import encode_midi_files, fetch_encoder, gen_enc_filename
 from src.utils.system import ensure_dir_exists
 
 
 def run(args):
     midi_file = args.file
     midi_dir = args.dir
+    encoder = args.encoder
 
     if not (bool(midi_dir) ^ bool(midi_file)):
         print('Please specify a --dir xor --file')
@@ -26,4 +27,4 @@ def run(args):
     dest = args.dest
     ensure_dir_exists(dest)
     encode_midi_files(
-        list(midi_files), dest=dest, instrument_filter=instrument_filter, no_transpose=args.no_transpose)
+        list(midi_files), dest=dest, encoder, instrument_filter=instrument_filter, no_transpose=args.no_transpose)
