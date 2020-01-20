@@ -84,8 +84,10 @@ def main():
                                help='Number of times to loop the generated sequence', type=int)
     parser_improv.add_argument('--tempo', default=120,
                                help='Tempo of generated MIDI', type=int)
-    parser_improv.add_argument('--sampling', default='ml',
+    parser_improv.add_argument('--sample', default='topk',
                                help='Sampling strategy for generation [ml|top-<n>|nucleus]', type=str)
+    parser_improv.add_argument('--k', default=3,
+                               help='Set k for beam or topk sampling', type=int)
     parser_improv.set_defaults(func=improv.run)
 
     # List artists

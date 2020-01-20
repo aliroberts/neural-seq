@@ -11,55 +11,36 @@ import torch.nn.functional as F
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 
 
-# def generate_seq(start, learner, length):
-#     seq = start
-#     while len(seq.split(' ')) < length:
-#         seq = learner.predict(seq)
-#     return seq
+def predict_beam(prompt, model, vocab, args):
+    pass
 
-def predict_topk(prompt, model, vocab, seq_len, k=1):
+
+def predict_topk(prompt, model, vocab, args):
     seq = prompt.split(',')
     ids = vocab.numericalize(seq)
     vocab_sz = len(vocab.itos)
     model.eval()
 
     with torch.no_grad():
-        while len(ids) < length:
+        while len(ids) < args.seq:
             decoded, hidden = model.forward(torch.LongTensor([ids]), None)
-            last_out = F.softmax(decoded.view(-1, vocab_sz)[-1])
-            choice = torch.multinomial(torch.tensor(
-                torch.topk(last_out, 1)[1], dtype=torch.float), 1)
-            highest_prob_idx = int(choice)
-            ids.append(highest_prob_idx)
-    return vocab.textify(ids)
+            last_out = F.softmax(decoded.view(-1, vocab_sz)[-1], dim=0)
+            topk = torch.as_tensor(torch.topk(last_out, args.k)[
+                1], dtype=torch.float)
+            choice_idx = int(torch.multinomial(topk, 1))
+            ids.append(int(topk[choice_idx]))
+    return vocab.textify(ids).split(' ')
 
 
-def predict_nucleus(prompt, model, vocab, seq_len):
+def predict_nucleus(prompt, model, vocab, args):
     pass
 
 
 PREDICT_CHOICES = {
+    'beam': predict_beam,
     'topk': predict_topk,
     'nucleus': predict_nucleus
 }
-
-
-def generate_seq(prompt, vocab, model, length):
-    seq = prompt.split(',')
-    ids = vocab.numericalize(seq)
-    vocab_sz = len(vocab.itos)
-    model.eval()
-
-    with torch.no_grad():
-        while len(ids) < length:
-            decoded, hidden = model.forward(torch.LongTensor([ids]), None)
-            last_out = F.softmax(decoded.view(-1, vocab_sz)[-1])
-            topk = torch.tensor(torch.topk(last_out, 1)[
-                1], dtype=torch.float)
-
-            choice_idx = int(torch.multinomial(topk, 1))
-            ids.append(int(topk[choice_idx]))
-    return vocab.textify(ids).split(' ')
 
 
 def run(args):
@@ -72,7 +53,9 @@ def run(args):
     print('Loading vocab...')
     vocab = Vocab.load(Path(model_dir)/'vocab.pkl')
 
-    enc_seq = generate_seq(args.prompt, vocab, model, args.seq)
+    predict_func = PREDICT_CHOICES[args.sample]
+
+    enc_seq = predict_func(args.prompt, model, vocab, args)
 
     # enc_seq = generate_seq(args.prompt, learn, args.seq)
     tokens = encoder.process_prediction(enc_seq) * args.loop
