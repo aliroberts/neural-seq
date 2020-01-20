@@ -14,7 +14,8 @@ class RNN(nn.Module):
     def __init__(self, vocab_sz, emb_sz=300, n_hid=600, n_layers=1):
         super(RNN, self).__init__()
         self.encoder = nn.Embedding(vocab_sz, emb_sz)
-        self.lstm = nn.LSTM(input_size=emb_sz, hidden_size=n_hid)
+        self.lstm = nn.LSTM(input_size=emb_sz,
+                            hidden_size=n_hid, num_layers=n_layers)
         self.decoder = nn.Linear(n_hid, vocab_sz)
 
     def forward(self, x, hidden):
