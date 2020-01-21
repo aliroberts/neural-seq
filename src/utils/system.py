@@ -9,12 +9,15 @@ from contextlib import contextmanager
 
 
 def get_kwarg_dict(callable):
-    argspec = inspect.getfullargspec(callable)
-    defaults = argspec.defaults
-    all_args = argspec.args
+    signature = inspect.signature(callable)
+    params = dict(signature.parameters)
 
-    arg_dict = {arg: default for arg, default in zip(
-        all_args[len(all_args) - len(defaults):], defaults)}
+    arg_dict = {}
+    for name, param in params.items():
+        if inspect.isclass(param.default) and issubclass(param.default, inspect._empty):
+            # Not a kwarg
+            continue
+        arg_dict[name] = param.default
     return arg_dict
 
 
@@ -27,19 +30,31 @@ def fetch_obj_from_file(dir_, module_name, obj_name):
             return candidate
 
 
-def fetch_class_from_file(dir_, module_name, class_, strict=False):
+def is_strict_subclass(c1, c2, strict=True):
+    if not (c1 and c2):
+        return False
+
+    if strict:
+        return issubclass(c1, c2) and c1 != c2
+    return issubclass(c1, c2)
+
+
+def fetch_subclass_from_file(dir_, module_name, class_, strict=False):
     module_path = str(dir_).replace('/', '.') + '.' + module_name
     module = importlib.import_module(module_path)
+
+    # Fetch the highest class in the inheritance heirarchy
+    highest_subclass = None
     for attr in dir(module):
         candidate = getattr(module, attr)
-        try:
-            subclass = issubclass(candidate, class_) if not strict else issubclass(
-                candidate, class_) and candidate != class_
-
-            if subclass:
-                return candidate
-        except TypeError:
+        if not inspect.isclass(candidate):
             continue
+
+        if is_strict_subclass(candidate, class_, strict=strict):
+            if highest_subclass and is_strict_subclass(highest_subclass, candidate):
+                continue
+            highest_subclass = candidate
+    return highest_subclass
 
 
 def copyfile(src, dest):

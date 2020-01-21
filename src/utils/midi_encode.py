@@ -7,7 +7,7 @@ import sys
 import music21
 
 from src.constants import ENCODER_DIR
-from src.utils.system import fetch_class_from_file
+from src.utils.system import fetch_subclass_from_file
 
 
 class BaseEncoder(object):
@@ -35,7 +35,7 @@ def fetch_encoder(name):
     """
     Provide the filename of the encoder and locate it in the ENCODER_DIR. Return the encoder class.
     """
-    return fetch_class_from_file(ENCODER_DIR, name.replace('.py', ''), BaseEncoder, strict=True)
+    return fetch_subclass_from_file(ENCODER_DIR, name.replace('.py', ''), BaseEncoder, strict=True)
 
 
 class Track(object):

@@ -8,8 +8,6 @@ from pathlib import Path
 import random
 import shutil
 
-from src.models.rnn import RNN, train
-
 from src.utils.models import fetch_model
 from src.utils.system import ensure_dir_exists
 
@@ -99,8 +97,8 @@ def run(args, model_kwargs, train_kwargs):
 
     Model, train_func, _ = fetch_model(args.model)
 
-    model = RNN(len(data_lm.vocab.itos), **model_custom_kwargs)
-    train(data_lm, model, args.epochs, dest_dir, **train_custom_kwargs)
+    model = Model(len(data_lm.vocab.itos), **model_custom_kwargs)
+    train_func(data_lm, model, args.epochs, dest_dir, **train_custom_kwargs)
 
     torch.save(model.state_dict(), dest_dir/'model.pth')
 
