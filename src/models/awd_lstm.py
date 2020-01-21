@@ -169,6 +169,15 @@ class RNNModel(nn.Module):
             return [weight.new(1, bsz, self.nhid if l != self.nlayers - 1 else (self.ninp if self.tie_weights else self.nhid)).zero_()
                     for l in range(self.nlayers)]
 
+    def predict(self, prompt):
+        """
+        Generate a raw output vector
+        """
+        self.hidden = self.init_hidden(1)
+        output, hidden = self(prompt, self.hidden)
+        self.hidden = hidden
+        return output
+
 
 def train(data, model, epochs, dest, lr=30, t0=0, lambd=0, wdecay=1.2e-6, alpha=2, beta=1, clip=0.25):
     criterion = nn.CrossEntropyLoss()

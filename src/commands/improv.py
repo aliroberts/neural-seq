@@ -25,7 +25,8 @@ def predict_topk(prompt, model, vocab, args):
 
     with torch.no_grad():
         while len(ids) < args.seq:
-            decoded, hidden = model.forward(torch.LongTensor([ids]), None)
+            decoded = model.predict(torch.LongTensor([[ids[-1]]]))
+            # decoded, hidden = model.forward(torch.LongTensor([ids]), None)
             last_out = F.softmax(decoded.view(-1, vocab_sz)[-1], dim=0)
             topk = torch.as_tensor(torch.topk(last_out, args.k)[
                 1], dtype=torch.float)
@@ -60,6 +61,7 @@ def run(args):
     # If no prompt has been provided, choose a random token from our vocab to start with
     prompt = args.prompt.split(',') if args.prompt else [
         random.choice(vocab.itos)]
+
     enc_seq = predict_func(prompt, model, vocab, args)
 
     # enc_seq = generate_seq(args.prompt, learn, args.seq)
