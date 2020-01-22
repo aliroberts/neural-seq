@@ -19,7 +19,7 @@ def run(args):
         print('Please specify a --dir xor --file')
         sys.exit(1)
 
-    encoder = fetch_encoder(args.encoder)
+    encoder = fetch_encoder(args.encoder)()
 
     if enc_dir:
         enc_files = [Path(enc_dir)/fname for fname in os.listdir(enc_dir)]
@@ -28,4 +28,4 @@ def run(args):
         enc_files = [Path(enc_file)]
     dest = args.dest
     ensure_dir_exists(dest)
-    decode_files(enc_files, encoder, dest, args.tempo)
+    decode_files(enc_files, dest, encoder, args.tempo)

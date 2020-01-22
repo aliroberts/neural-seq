@@ -9,7 +9,7 @@ from src.utils.system import ensure_dir_exists
 def run(args):
     midi_file = args.file
     midi_dir = args.dir
-    encoder = args.encoder
+    encoder = fetch_encoder(args.encoder)()
 
     if not (bool(midi_dir) ^ bool(midi_file)):
         print('Please specify a --dir xor --file')
