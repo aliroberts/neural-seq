@@ -121,7 +121,7 @@ def main():
     parser_train.add_argument('--epochs', default=10,
                               help='Epochs to train model for (default 10)', type=int),
     parser_train.add_argument('--bs', default=32, help='Batch size', type=int)
-    parser_train.add_argument('--bptt', default=200, help='BPTT', type=int)
+    parser_train.add_argument('--bptt', default=128, help='BPTT', type=int)
 
     model_kwargs = {}
     train_kwargs = {}

@@ -5,7 +5,7 @@ import music21
 from src.utils.midi_encode import BaseEncoder
 
 
-class SimpleEncoder(BaseEncoder):
+class StartHoldRestEncoder(BaseEncoder):
     def encode(self, stream, sample_freq=4, transpose=0):
         # Monophonic encoding
         # Iterate through the notes/chords/rests. When we encounter a note, add it to the list of encoded notes

@@ -62,7 +62,7 @@ def embedded_dropout(embed, words, dropout=0.1, scale=None):
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
 
-    def __init__(self, ntoken, ninp=300, nhid=600, nlayers=1, rnn_type='LSTM', dropout=0.5, dropouth=0.5, dropouti=0.5, dropoute=0.1, wdrop=0, tie_weights=False):
+    def __init__(self, ntoken, ninp=300, nhid=600, nlayers=4, rnn_type='LSTM', dropout=0.5, dropouth=0.5, dropouti=0.5, dropoute=0.1, wdrop=0, tie_weights=False):
         super(RNNModel, self).__init__()
         self.lockdrop = LockedDropout()
         self.idrop = nn.Dropout(dropouti)
@@ -179,7 +179,7 @@ class RNNModel(nn.Module):
         return output
 
 
-def train(data, model, epochs, dest, lr=30, t0=0, lambd=0, wdecay=1.2e-6, alpha=2, beta=1, clip=0.25):
+def train(data, model, epochs, dest, lr=0.01, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, beta=0, clip=0.25):
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.ASGD(model.parameters(), lr=lr,
                            t0=t0, lambd=lambd, weight_decay=wdecay)
