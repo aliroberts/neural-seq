@@ -126,7 +126,7 @@ def main():
     model_kwargs = {}
     train_kwargs = {}
 
-    if sys.argv[1] == 'train':
+    if len(sys.argv) > 1 and sys.argv[1] == 'train':
         model_args = parser_train.parse_known_args()
         _, train_func, model_kwargs = fetch_model(model_args[0].model)
 
