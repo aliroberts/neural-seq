@@ -71,7 +71,9 @@ def main():
     # Music generation
     parser_improv = subparsers.add_parser('improv')
     parser_improv.add_argument('--model', required=True,
-                               help='Path to the saved model to use for generation', type=str)
+                               help='Model type', type=str)
+    parser_improv.add_argument('--state', required=True,
+                               help='Path to saved model state', type=str)
     parser_improv.add_argument('--encoder', required=True,
                                help='The filename of the encoder to use', type=str)
     parser_improv.add_argument('--rec',

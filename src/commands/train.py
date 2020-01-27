@@ -5,6 +5,7 @@ from src.utils.system import ensure_dir_exists
 import errno
 import os
 from pathlib import Path
+import pickle
 import random
 import shutil
 
@@ -81,11 +82,11 @@ def run(args, model_kwargs, train_kwargs):
     #             args.data_dir, tokenizer=CustomTokenizer(), include_bos=False,
     #             include_eos=False, bs=args.bs, vocab=vocab, bptt=args.bptt)
     #         data_lm.save(data_lm_path)
-
     data_lm = TextLMDataBunch.from_folder(
         args.data_dir, tokenizer=CustomTokenizer(), include_bos=False,
-        include_eos=False, bs=args.bs, vocab=vocab, bptt=args.bptt)
-
+        include_eos=False, bs=args.bs, vocab=vocab, bptt=int(args.bptt))
+    # import ipdb
+    # ipdb.set_trace()
     print('Saving vocab...')
     data_lm.vocab.save(dest_dir/'vocab.pkl')
     print('Training...')
@@ -98,10 +99,11 @@ def run(args, model_kwargs, train_kwargs):
     Model, train_func, _ = fetch_model(args.model)
 
     model = Model(len(data_lm.vocab.itos), **model_custom_kwargs)
-    train_func(data_lm, model, args.epochs, dest_dir, **train_custom_kwargs)
 
-    torch.save(model.state_dict(), dest_dir/'model.pth')
+    with open(dest_dir/'params.pkl', 'wb') as f:
+        pickle.dump(model_custom_kwargs, f)
 
+    train_func(data_lm, model, args, **train_custom_kwargs)
     return
 
     # TODO: Save model state for resuming training (figure out how to organise this between model file and this one)

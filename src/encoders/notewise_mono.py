@@ -15,7 +15,7 @@ class NotewiseMonoEncoder(BaseEncoder):
         for i, char in enumerate(list(reversed(bin_str))):
             if char == '1':
                 processed.append(f'D-{2**i}')
-        return list(reversed(processed))
+        return list(reversed(processed)), len(bf)
 
     def encode(self, stream, sample_freq=4, transpose=0):
         # Monophonic encoding
@@ -31,21 +31,25 @@ class NotewiseMonoEncoder(BaseEncoder):
         shr_encoder = StartHoldRestEncoder()
         shr_encoded = shr_encoder.encode(stream, transpose=transpose)
 
+        duration = 0
         encoded = []
         duration_buffer = []
         for action in shr_encoded:
+
             if action[0] == 'H':
                 duration_buffer.append('D-1')
             elif action == 'R' and (encoded and encoded[-1] == 'R'):
                 duration_buffer.append('D-1')
             else:
-                encoded += self.process_duration_buffer(duration_buffer)
+                comp, dur = self.process_duration_buffer(duration_buffer)
+                duration += dur
+                encoded += comp
                 encoded.append(action)
                 duration_buffer = ['D-1']
         encoded += self.process_duration_buffer(duration_buffer)
         return encoded
 
-    def decode(self, enc_notes, sample_freq=4):
+    def decode(self, enc_notes, sample_freq=4, seq_length=None):
         if isinstance(enc_notes, str):
             enc_notes = enc_notes.split(',')
         duration_inc = 1 / sample_freq
@@ -54,7 +58,6 @@ class NotewiseMonoEncoder(BaseEncoder):
 
         duration_acc = 0
         curr_note = None
-
         for enc in enc_notes:
             if enc[0] == 'S':
                 curr_note = music21.note.Note()
@@ -70,16 +73,34 @@ class NotewiseMonoEncoder(BaseEncoder):
                     int(enc.replace('D-', ''))
         return notes
 
-    def process_prediction(self, prediction):
+    def process_prediction(self, prediction, seq_length=None):
+        # If a specified sequence length has been provided, truncate
+        # the prediction to fit (the number of tokens is not the same
+        # as the duration/sequence length of the provided encodings)
         print(prediction)
-        tokens = prediction
-        prev_tok = None
+        processed = []
+        curr_seq_len = 0
+        for tok in prediction:
+            if seq_length and tok[0] == 'D':
+                dur = int(tok.replace('D-', ''))
+                remaining = seq_length - curr_seq_len
 
-        cleaned = []
-        for t in tokens:
-            if prev_tok and prev_tok[0] == 'H' and t[0] == 'H':
-                if prev_tok.split('-')[1] != t.split('-')[1]:
-                    t = t.replace('H', 'S')
-            cleaned.append(t)
-            prev_tok = t
-        return cleaned
+                if dur > remaining:
+                    processed += self.process_duration_buffer(
+                        ['D-1' for _ in range(remaining)])[0]
+                    break
+                else:
+                    processed.append(tok)
+                    curr_seq_len += dur
+            else:
+                prev_is_action = len(
+                    processed) > 0 and processed[-1] in ('S', 'R')
+                if prev_is_action and tok[0] in ('S', 'R'):
+                    continue
+
+                processed.append(tok)
+        print(processed)
+        return processed
+
+    def duration(self, encoded):
+        return sum([int(tok.replace('D-', '')) for tok in encoded if 'D-' in tok])

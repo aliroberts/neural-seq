@@ -11,7 +11,7 @@ from src.utils.system import fetch_subclass_from_file
 
 
 class BaseEncoder(object):
-    def encode(self, stream, sample_freq, transpose=0):
+    def encode(self, stream, sample_freq=4, transpose=0):
         """
         Return a list-of-strings representation of the notes for downstream tasks (language modeling)
         """
@@ -24,11 +24,19 @@ class BaseEncoder(object):
         """
         raise NotImplementedError
 
-    def process_prediction(self, prediction):
+    def process_prediction(self, prediction, seq_length=None):
         """
         Perform any post-processing of a raw prediction from a model before it is passed to the decoder
+        including any truncating of the sequence so it's the specified length.
         """
         return prediction
+
+    def duration(self, encoded):
+        """
+        Takes a sequence of encoded tokens and calculates the musical duration of the encoded sequence
+        (the number returns the number of 'beats' of sample frequency duration with which the encoding was made)
+        """
+        return NotImplementedError
 
 
 def fetch_encoder(name):

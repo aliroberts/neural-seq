@@ -77,7 +77,7 @@ def run(args):
     midi_files_csv = args.midi_files
     dest = args.dest
 
-    encoder = fetch_encoder(args.encoder)
+    encoder = fetch_encoder(args.encoder)()
 
     def instrument_filter(
         instrument): return args.instrument_filter in str(instrument).lower()

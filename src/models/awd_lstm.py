@@ -72,7 +72,7 @@ class RNNModel(nn.Module):
         assert rnn_type in ['LSTM', 'QRNN', 'GRU'], 'RNN type is not supported'
         if rnn_type == 'LSTM':
             self.rnns = [torch.nn.LSTM(ninp if l == 0 else nhid, nhid if l != nlayers - 1 else (
-                ninp if tie_weights else nhid), 1, dropout=0) for l in range(nlayers)]
+                ninp if tie_weights else nhid), 1, dropout=0, batch_first=False) for l in range(nlayers)]
             if wdrop:
                 self.rnns = [WeightDrop(
                     rnn, ['weight_hh_l0'], dropout=wdrop) for rnn in self.rnns]
@@ -129,7 +129,6 @@ class RNNModel(nn.Module):
         emb = embedded_dropout(self.encoder, input,
                                dropout=self.dropoute if self.training else 0)
         #emb = self.idrop(emb)
-
         emb = self.lockdrop(emb, self.dropouti)
 
         raw_output = emb
@@ -179,24 +178,35 @@ class RNNModel(nn.Module):
         return output
 
 
-def train(data, model, epochs, dest, lr=0.01, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, beta=0, clip=0.25):
+def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, beta=0, clip=0.25, when='10,20,30'):
+    dest = args.dest
+    epochs = args.epochs
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.ASGD(model.parameters(), lr=lr,
                            t0=t0, lambd=lambd, weight_decay=wdecay)
     train_dl = data.train_dl
     vocab_sz = len(data.vocab.itos)
     hidden = model.init_hidden(data.bs)
+
+    when = map(lambda x: int(x), when.split(','))
+
     model.train()
 
-    for epoch in range(epochs):
+    for epoch in range(1, epochs + 1):
         for xb, yb in train_dl:
             # xb and yb here will contain indices for a lookup table for each symbol in our vocabulary
             # They will be of dimension bs * bptt
+            if epoch in when:
+                lr /= 10
+                print(f'Learning rate reduced ({lr})')
+
             hidden = repackage_hidden(hidden)
             optimizer.zero_grad()
 
+            # Note that since this LSTM doesn't use batch_first structure we need
+            # to transpose the input to be of shape (bptt * bs)
             output, hidden, rnn_hs, dropped_rnn_hs = model(
-                xb, hidden, return_h=True)
+                xb.t(), hidden, return_h=True)
 
             flat_yb = yb.view(-1)
             raw_loss = criterion(output.view(-1, vocab_sz), flat_yb)
@@ -212,4 +222,11 @@ def train(data, model, epochs, dest, lr=0.01, t0=0, lambd=0, wdecay=1.2e-6, alph
             loss.backward()
             torch.nn.utils.clip_grad_norm(model.parameters(), clip)
             optimizer.step()
+
+            if args.save_freq and epoch % args.save_freq == 0 or epoch == epochs:
+                checkpoint_name = f'model-epoch-{epoch}.pth'
+                print(f'Saving checkpoint {checkpoint_name}')
+                torch.save(model.state_dict(),
+                           f'{args.dest}/{checkpoint_name}')
+
             print(f'Loss: {raw_loss.data}')
