@@ -38,7 +38,7 @@ def main():
         '--file', default=None, help='A MIDI file that should be encoded.', type=str)
     parser_encode.add_argument('--dest', default=None, required=True,
                                help='The directory to save the encodings of the specified MIDI file(s)', type=str)
-    parser_encode.add_argument('--instrument-filter', default='bass',
+    parser_encode.add_argument('--filter', default='bass',
                                help='A filter to be applied to the instrument name in the MIDI file', type=str)
     parser_encode.add_argument('--no-transpose', default=False, action='store_true',
                                help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
@@ -58,7 +58,7 @@ def main():
                                     help='Where to output the dataset', type=str)
     parser_gen_dataset.add_argument('--encoder',
                                     help='The filename of the encoder to use', type=str, required=True)
-    parser_gen_dataset.add_argument('--instrument-filter', default='bass',
+    parser_gen_dataset.add_argument('--filter', default='bass',
                                     help='A filter to be applied to the instrument name in the MIDI file', type=str)
     parser_gen_dataset.add_argument('--no-transpose', default=False, action='store_true',
                                     help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
@@ -102,13 +102,15 @@ def main():
     parser_list_songs = subparsers.add_parser('list-songs')
     parser_list_songs.add_argument('--artist', required=True, default=None,
                                    help='List songs for a given artist (exact match, case sensitive)', type=str)
+    parser_list_songs.add_argument('--path', required=False, action='store_true', default=False,
+                                   help='List relative paths to the files associated with the specified particular artist')
     parser_list_songs.set_defaults(func=list_songs.run)
 
     # Play MIDI
     parser_play_midi = subparsers.add_parser('play-midi')
     parser_play_midi.add_argument('midi_file',
                                   help='Play the specified MIDI file from the terminal', type=str)
-    parser_play_midi.add_argument('--instrument-filter', default=None,
+    parser_play_midi.add_argument('--filter', default=None,
                                   help='A filter to be applied to the instrument name in the MIDI file', type=str)
     parser_play_midi.add_argument('--tempo', default=120,
                                   help='Tempo for playback', type=int)
