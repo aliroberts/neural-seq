@@ -19,4 +19,7 @@ def run(args):
     except FileNotFoundError:
         print('NO SONGS FOUND')
 
-    print('\n'.join(songs))
+    if args.path:
+        print('\n'.join([str(MIDI_ARTISTS/artist/song) for song in songs]))
+    else:
+        print('\n'.join(songs))

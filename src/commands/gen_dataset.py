@@ -80,7 +80,7 @@ def run(args):
     encoder = fetch_encoder(args.encoder)()
 
     def instrument_filter(
-        instrument): return args.instrument_filter in str(instrument).lower()
+        instrument): return args.filter in str(instrument).lower()
 
     if os.path.isdir(dest):
         should_delete_dir = yn(

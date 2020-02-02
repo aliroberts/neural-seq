@@ -16,7 +16,7 @@ def run(args):
         sys.exit(1)
 
     def instrument_filter(
-        instrument): return args.instrument_filter in str(instrument).lower()
+        instrument): return args.filter in str(instrument).lower()
 
     if midi_dir:
         midi_files = [Path(midi_dir)/fname for fname in os.listdir(midi_dir)
