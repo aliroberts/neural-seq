@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import sys
 
-from src.utils.midi_encode import encode_midi_files, fetch_encoder, gen_enc_filename
+from src.utils.midi_encode import MIDIData, fetch_encoder, gen_enc_filename
 from src.utils.system import ensure_dir_exists
 
 
@@ -26,5 +26,5 @@ def run(args):
         midi_files = [Path(midi_file)]
     dest = args.dest
     ensure_dir_exists(dest)
-    encode_midi_files(
+    MIDIData.encode_files(
         list(midi_files), dest, encoder, instrument_filter=instrument_filter, no_transpose=args.no_transpose)

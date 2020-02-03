@@ -1,26 +1,33 @@
 import math
 from collections import defaultdict
+import json
 import os
 from pathlib import Path
 import sys
 
 import music21
+import pretty_midi
 
-from src.constants import ENCODER_DIR
+from src.constants import ENCODER_DIR, MIDI_PATCH_NAMES
 from src.utils.system import fetch_subclass_from_file
 
 
+def gen_enc_filename(fpath):
+    return os.path.basename(fpath).split('.')[0]
+
+
 class BaseEncoder(object):
-    def encode(self, stream, sample_freq=4, transpose=0):
+    def encode(self, midi, sample_freq=4, transpose=0):
         """
-        Return a list-of-strings representation of the notes for downstream tasks (language modeling)
+        Return a list-of-strings representation of the notes for downstream tasks (language modeling).
+        Takes a PrettyMIDI instance.
         """
         raise NotImplementedError
 
-    def decode(self, enc_notes, sample_freq=4):
+    def decode(self, encoded, midi_programs=None, tempo=None):
         """
-        Return a list of music21.note.Note/Rest instances from a list-of-strings representation sampled at the
-        specified sample frequency.
+        Return a MIDI file containing the decoding for the specified encoding. midi_programs contains a list
+        of the programs (corresponding to instruments) that were included in the original pre-encoded MIDI file.
         """
         raise NotImplementedError
 
@@ -46,82 +53,133 @@ def fetch_encoder(name):
     return fetch_subclass_from_file(ENCODER_DIR, name.replace('.py', ''), BaseEncoder, strict=True)
 
 
-class Track(object):
-    def __init__(self, name, stream, encoder):
-        self.name = name
-        self.stream = stream  # music21.stream.Stream()
-        self.encoder = encoder
-
-    def encode(self, transpose=0):
-        return self.encoder.encode(self.stream, transpose=transpose)
-
-    def track_range(self):
-        pitches = [note.pitch.midi for note in self.stream.notes if isinstance(
-            note, music21.note.Note)]
-        return (min(pitches), max(pitches))
-
-    def encode_many(self, rng=(24, 75)):
-        """
-        Returns a list of encodings that fit between the provided range and preserve the original
-        note relationships (if any can).
-        """
-        rng_min, rng_max = rng
-        pitch_min, pitch_max = self.track_range()
-
-        trans_min = rng_min - pitch_min
-        trans_max = trans_min + (rng_max - pitch_max)
-
-        encodings = []
-
-        if (rng_max - rng_min) < (pitch_max - pitch_min):
-            return encodings
-
-        for transpose in range(trans_min, trans_max + 1):
-            encodings.append(self.encode(transpose=transpose))
-        return encodings
-
-
-class TrackCollection(object):
+class MIDIData(object):
     """
-    A wrapper around music21's Parts that contains some loading helpers and
-    wraps the parts in Track classes that have additional encoding/decoding
-    functionality
+    A thin wrapper around pretty_midi's PrettyMIDI class which wraps it up with and encoder.
     """
-
-    def __init__(self, tracks):
-        self.tracks = tracks
-
     @classmethod
-    def load(cls, stream, encoder, instrument_filter=None):
+    def from_file(cls, fname, encoder, instrument_filter=None):
         """
-        Load a track collection with a collection of parts for each instrument
+        Load a MIDIData instance from the specified MIDI file and with the supplied encoder instance.
         """
-        stream = music21.instrument.partitionByInstrument(stream)
-        tracks = []
-        for p in stream.parts:
-            if instrument_filter and not(p.partName and instrument_filter(p.partName.lower())):
+        midi_data = pretty_midi.pretty_midi.PrettyMIDI(str(fname))
+        for inst in midi_data.instruments:
+            try:
+                name = MIDI_PATCH_NAMES[inst.program] if not inst.is_drum else 'Drum Kit'
+            except IndexError:
                 continue
 
-            # Assigns actions to measures and fills in Rests
-            # See https://web.mit.edu/music21/doc/moduleReference/moduleInstrument.html for more info
-            # p.makeRests(inPlace=True, hideRests=True)
-            # p.makeMeasures(inPlace=True)
-            # p.makeTies(inPlace=True)
-            tracks.append(Track(p.partName, p, encoder))
-        return cls(tracks)
+            if instrument_filter(name.lower()):
+                print(
+                    f'Found instrument matching filter: {name}')
+                midi_data.instruments = [inst]
+                break
+        else:
+            print(f'Warning: No instrument matching filter')
+            midi_data.instruments = []
+        return cls(midi_data, encoder)
 
     @classmethod
-    def load_from_file(cls, fname, encoder, instrument_filter=None):
-        with open(fname, 'rb') as f:
-            mf = music21.midi.MidiFile()
-            mf.openFileLike(f)
-            mf.read()
-        stream = music21.midi.translate.midiFileToStream(mf)
-        return cls.load(stream, encoder, instrument_filter=instrument_filter)
+    def encode_files(cls, files, dest, encoder, prefix='', instrument_filter='',
+                     no_transpose=False, ignore_duplicates=True, already_encoded=None, gen_enc_filename=gen_enc_filename):
+        """
+        Takes a list of midi file paths and an output destination in which to save the encodings.
+        """
+        # Keep track of the files that we've successfully encoded so that we don't end up encoding a duplicate
+        # file (there are several different versions of the the same track in the cleaned MIDI dataset, for example)
+        ignore = already_encoded.copy() if already_encoded else []
+        vocab = set()
+        for fpath in files:
+            print(f'Processing {fpath}...')
+            if gen_enc_filename(fpath) in ignore:
+                print('Duplicate detected. Skipping...')
+                continue
+            out_name = Path(os.path.basename(fpath)).with_suffix('')
+            try:
+                midi_data = cls.from_file(
+                    fpath, encoder, instrument_filter=instrument_filter)
+            except Exception as e:
+                print(instrument_filter)
+                raise
+                print('Unable to load file, skipping...')
+                continue
+            print(
+                f'DONE (found {len(midi_data)} tracks matching filter)')
 
+            print(
+                f'----> Encoding...')
+            try:
+                if no_transpose:
+                    encoded = [midi_data.encode()]
+                else:
+                    encoded = midi_data.encode_range()
+            except ValueError:
+                raise
+                print('Encoding failed. Skipping...')
+                continue
 
-def gen_enc_filename(fpath):
-    return os.path.basename(fpath).split('.')[0]
+            if ignore_duplicates:
+                ignore.append(gen_enc_filename(fpath))
+
+            print(f'----> Writing files ({len(encoded)}) to {dest}')
+            for i, enc in enumerate(encoded):
+                vocab = vocab.union(set(enc))
+                _, tempi = midi_data.midi_data.get_tempo_changes()
+                enc_data = {
+                    'data': enc,
+                    'vocab': list(vocab),
+                    'tempo': tempi[0],
+                    'programs': [int(inst.program) for inst in midi_data.midi_data.instruments]
+                }
+                with open(Path(dest)/f'{out_name}-{i+1}.json', 'w') as f:
+                    json.dump(enc_data, f)
+            print('----> DONE')
+        return list(vocab)
+
+    @classmethod
+    def decode_files(cls, files, dest, encoder, tempo=None):
+        """
+        Takes a list of file names, an output directory and an encoder and decodes the encoded files into
+        midi files. If a tempo has not been provided then use the one in the file containing encoding data
+        if there is one.
+        """
+
+        for fpath in files:
+            with open(fpath) as f:
+                enc_data = json.load(f)
+            print(f'Decoding {fpath}')
+            enc, midi_programs, enc_tempo = enc_data['data'], enc_data['programs'], enc_data['tempo']
+            tempo = tempo if tempo else enc_tempo
+            decoded = encoder.decode(
+                enc, midi_programs=midi_programs, tempo=tempo)
+
+            out_fname = os.path.splitext(fpath)[0] + '.mid'
+            out_path = Path(dest)/os.path.basename(out_fname)
+            print(f'----> Writing file to {out_path}')
+            with open(out_path, 'w') as f:
+                decoded.write(out_fname)
+            print('----> DONE')
+
+    def __init__(self, midi_data, encoder):
+        self.midi_data = midi_data
+        self.encoder = encoder
+
+    def encode(self):
+        """
+        Create an encoding for the instance's midi_data, transposing the pitches accordingly.
+        NOTE: Will not attempt to transpose the drum kit (if there is one)
+        """
+        return self.encoder.encode(self.midi_data)
+
+    def encode_range(self):
+        """
+        Create a batch of encodings for a single MIDIData object that are transposed into as many keys as possible
+        (given the range of the instruments)
+        """
+        return [self.encoder.encode(self.midi_data)]
+
+    def __len__(self):
+        return len(self.midi_data.instruments)
 
 
 def encode_midi_files(files, dest, encoder, prefix='', instrument_filter='', midi_range=(24, 75),

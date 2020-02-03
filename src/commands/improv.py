@@ -4,7 +4,7 @@ from fastai.text import *
 from pathlib import Path
 import pickle
 import os
-from src.utils.midi_encode import Track, fetch_encoder
+from src.utils.midi_encode import MIDIData, fetch_encoder
 from src.utils.models import fetch_model
 import torch
 import torch.nn.functional as F

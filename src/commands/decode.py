@@ -1,12 +1,10 @@
-
-from fastai.text import AWD_LSTM
 import importlib
 import os
 from pathlib import Path
 import sys
 
 from src.constants import ENCODER_DIR
-from src.utils.midi_encode import decode_files, fetch_encoder
+from src.utils.midi_encode import fetch_encoder, MIDIData
 from src.utils.system import ensure_dir_exists
 
 import torch.nn as nn
@@ -30,4 +28,4 @@ def run(args):
         enc_files = [Path(enc_file)]
     dest = args.dest
     ensure_dir_exists(dest)
-    decode_files(enc_files, dest, encoder, args.tempo)
+    MIDIData.decode_files(enc_files, dest, encoder, args.tempo)

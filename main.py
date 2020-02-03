@@ -24,7 +24,7 @@ def main():
         '--file', default=None, help='A file that should be decoded', type=str)
     parser_decode.add_argument('--dest', default=None, required=True,
                                help='The directory to save the decoded MIDI file(s)', type=str)
-    parser_decode.add_argument('--tempo', default=120,
+    parser_decode.add_argument('--tempo', default=None,
                                help='Tempo of decoded MIDI', type=int)
     parser_decode.set_defaults(func=decode.run)
 
@@ -112,7 +112,7 @@ def main():
                                   help='Play the specified MIDI file from the terminal', type=str)
     parser_play_midi.add_argument('--filter', default=None,
                                   help='A filter to be applied to the instrument name in the MIDI file', type=str)
-    parser_play_midi.add_argument('--tempo', default=120,
+    parser_play_midi.add_argument('--tempo', default=None,
                                   help='Tempo for playback', type=int)
     parser_play_midi.set_defaults(func=play_midi.run)
 
