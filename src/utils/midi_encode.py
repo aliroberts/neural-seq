@@ -100,7 +100,6 @@ class MIDIData(object):
                     fpath, encoder, instrument_filter=instrument_filter)
             except Exception as e:
                 print(instrument_filter)
-                raise
                 print('Unable to load file, skipping...')
                 continue
             print(
@@ -113,8 +112,7 @@ class MIDIData(object):
                     encoded = [midi_data.encode()]
                 else:
                     encoded = midi_data.encode_range()
-            except ValueError:
-                raise
+            except Exception:
                 print('Encoding failed. Skipping...')
                 continue
 
@@ -183,7 +181,7 @@ class MIDIData(object):
 
 
 def encode_midi_files(files, dest, encoder, prefix='', instrument_filter='', midi_range=(24, 75),
-                      no_transpose=False, ignore_duplicates=True, already_encoded=None, gen_enc_filename=gen_enc_filename):
+                      transpose=False, ignore_duplicates=True, already_encoded=None, gen_enc_filename=gen_enc_filename):
     """
     Takes a list of midi file paths and an output destination in which to save the encodings.
     """
@@ -210,7 +208,7 @@ def encode_midi_files(files, dest, encoder, prefix='', instrument_filter='', mid
         for track in track_collection.tracks:
             print(f'----> Encoding {track.name}')
             try:
-                if no_transpose:
+                if not transpose:
                     encoded = [track.encode()]
                 else:
                     encoded = track.encode_many(midi_range)

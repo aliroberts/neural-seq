@@ -2,6 +2,7 @@
 import io
 import pretty_midi
 
+from src import NeuralSeqEncodingException
 from src.utils.midi_encode import BaseEncoder
 
 
@@ -19,6 +20,9 @@ class DrumEncoder(BaseEncoder):
         for inst in midi.instruments:
             if inst.is_drum:
                 drums = inst
+
+        if not drums:
+            raise NeuralSeqEncodingException
 
         resolution = 60 / tempo / 4  # 16th notes
 

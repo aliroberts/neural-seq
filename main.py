@@ -40,7 +40,7 @@ def main():
                                help='The directory to save the encodings of the specified MIDI file(s)', type=str)
     parser_encode.add_argument('--filter', default='bass',
                                help='A filter to be applied to the instrument name in the MIDI file', type=str)
-    parser_encode.add_argument('--no-transpose', default=False, action='store_true',
+    parser_encode.add_argument('--transpose', default=False, action='store_true',
                                help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
     parser_encode.set_defaults(func=encode.run)
 
@@ -60,7 +60,7 @@ def main():
                                     help='The filename of the encoder to use', type=str, required=True)
     parser_gen_dataset.add_argument('--filter', default='bass',
                                     help='A filter to be applied to the instrument name in the MIDI file', type=str)
-    parser_gen_dataset.add_argument('--no-transpose', default=False, action='store_true',
+    parser_gen_dataset.add_argument('--transpose', default=False, action='store_true',
                                     help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
     parser_gen_dataset.add_argument('--valid', default=0,
                                     help='Proportion of the input files to reserve for the validation set (Default 0)', type=float)

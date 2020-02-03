@@ -10,13 +10,13 @@ import pandas as pd
 from src import NeuralSeqUnrecognisedArgException
 
 from src.utils.midi_data import midi_data_required
-from src.utils.midi_encode import encode_midi_files, fetch_encoder, gen_enc_filename
+from src.utils.midi_encode import fetch_encoder, gen_enc_filename, MIDIData
 from src.utils.system import copyfile, dir_names, ensure_dir_exists, yn
 from src.constants import MIDI_ARTISTS
 
 
 @midi_data_required
-def gen_dataset_from_artists(artists, dest, encoder, instrument_filter, no_transpose=False,
+def gen_dataset_from_artists(artists, dest, encoder, instrument_filter, transpose=False,
                              valid=0, test=0, skip_existing=True):
     midi_files = []
     for artist in artists:
@@ -31,8 +31,8 @@ def gen_dataset_from_artists(artists, dest, encoder, instrument_filter, no_trans
         encoded = [gen_enc_filename(fname)
                    for fname in os.listdir(save_all_to)]
 
-    vocab = encode_midi_files(
-        list(midi_files), save_all_to, encoder, instrument_filter=instrument_filter, no_transpose=no_transpose, already_encoded=encoded)
+    vocab = MIDIData.encode_files(
+        list(midi_files), save_all_to, encoder, instrument_filter=instrument_filter, already_encoded=encoded)
 
     # Once we've encoded all the files we can, split them up into valid, train and test directories
     encoded = [(Path(dest)/'all')/enc for enc in os.listdir(save_all_to)]
@@ -58,15 +58,15 @@ def gen_dataset_from_artists(artists, dest, encoder, instrument_filter, no_trans
         f.write(','.join(vocab))
 
 
-def gen_dataset_from_csv(csv_file, dest, encoder, instrument_filter, no_transpose=False):
+def gen_dataset_from_csv(csv_file, dest, encoder, instrument_filter, transpose=False):
     df = pd.read_csv(csv_file)
     vocab = set()
     for type_ in ('train', 'valid', 'test'):
         filtered = df[df['type'] == type_]
         save_to = Path(dest)/type_
         ensure_dir_exists(save_to)
-        set_vocab = encode_midi_files(
-            list(filtered['file']), save_to, encoder, instrument_filter=instrument_filter, no_transpose=no_transpose)
+        set_vocab = MIDIData.encode_files(
+            list(filtered['file']), save_to, encoder, instrument_filter=instrument_filter)
         vocab = vocab.union(set_vocab)
     with open(Path(dest)/'vocab', 'w') as f:
         f.write(','.join(vocab))
@@ -83,14 +83,22 @@ def run(args):
         instrument): return args.filter in str(instrument).lower()
 
     if os.path.isdir(dest):
-        should_delete_dir = yn(
-            f'The destination directory {dest} already exists, would you like to delete it? If you do not delete it, new files will be added to it and any old ones will be kept. [y/n] ')
-        if should_delete_dir:
-            try:
-                shutil.rmtree(dest)
-            except OSError as e:
-                print(f'An error occurred: {e.filename} - {e.strerror}.')
-                sys.exit(1)
+        dir_contents = os.listdir(dest)
+
+        if 'train' in dir_contents and 'valid' in dir_contents:
+            should_delete_dir = yn(
+                f'The destination dataset directory {Path(dest).resolve()} already exists, would you like to delete it? If you do not delete it, new files will be added to it and any old ones will be kept. [y/n] ')
+            if should_delete_dir:
+                try:
+                    shutil.rmtree(dest)
+                except OSError as e:
+                    print(f'An error occurred: {e.filename} - {e.strerror}.')
+                    sys.exit(1)
+        else:
+            # A directory exists but it is not a recognised data dir. Ask the user to delete it.
+            print(
+                f'The destination directory {Path(dest).resolve()} already exists.')
+            sys.exit(0)
 
     if artists_file:
         with open(artists_file) as f:
@@ -98,10 +106,10 @@ def run(args):
         gen_dataset_from_artists(
             artists, dest, encoder,
             instrument_filter,
-            no_transpose=args.no_transpose, valid=args.valid, test=args.test)
+            transpose=args.transpose, valid=args.valid, test=args.test)
     elif midi_files_csv:
         gen_dataset_from_csv(midi_files_csv, dest, encoder,
                              instrument_filter=ainstrument_filter,
-                             no_transpose=args.no_transpose,)
+                             transpose=args.transpose,)
     else:
         raise NeuralSeqUnrecognisedArgException
