@@ -43,7 +43,7 @@ class BaseEncoder(object):
         Takes a sequence of encoded tokens and calculates the musical duration of the encoded sequence
         (the number returns the number of 'beats' of sample frequency duration with which the encoding was made)
         """
-        return NotImplementedError
+        raise NotImplementedError
 
 
 def fetch_encoder(name):
@@ -129,7 +129,8 @@ class MIDIData(object):
                     'tempo': tempi[0],
                     'programs': [int(inst.program) for inst in midi_data.midi_data.instruments]
                 }
-                with open(Path(dest)/f'{out_name}-{i+1}.json', 'w') as f:
+                # NOTE: We save the files with a txt extension so FastAI's TextLMDataBunch can be used easily
+                with open(Path(dest)/f'{out_name}-{i+1}.txt', 'w') as f:
                     json.dump(enc_data, f)
             print('----> DONE')
         return list(vocab)

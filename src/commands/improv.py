@@ -4,6 +4,7 @@ from fastai.text import *
 from pathlib import Path
 import pickle
 import os
+from src.utils.midi_data import play_midi
 from src.utils.midi_encode import MIDIData, fetch_encoder
 from src.utils.models import fetch_model
 import torch
@@ -23,7 +24,6 @@ def predict_topk(prompt, model, encoder, vocab, args):
     ids = vocab.numericalize(seq)
     vocab_sz = len(vocab.itos)
     model.eval()
-
     with torch.no_grad():
         while encoder.duration(vocab.textify(ids).split(' ')) < args.seq:
             decoded = model.predict(torch.LongTensor([[ids[-1]]]))
@@ -72,14 +72,7 @@ def run(args):
     enc_seq = predict_func(prompt, model, encoder, vocab, args)
 
     # enc_seq = generate_seq(args.prompt, learn, args.seq)
-    tokens = encoder.process_prediction(enc_seq) * args.loop
+    tokens = enc_seq * args.loop
 
-    dec_seq = encoder.decode(tokens)
-    stream = music21.stream.Stream()
-    t = music21.tempo.MetronomeMark(number=args.tempo)
-    stream.append(t)
-    for note in dec_seq:
-        stream.append(note)
-
-    sp = music21.midi.realtime.StreamPlayer(stream)
-    sp.play()
+    decoded = encoder.decode(tokens, tempo=args.tempo)
+    play_midi(decoded)

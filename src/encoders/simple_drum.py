@@ -22,9 +22,11 @@ class DrumEncoder(BaseEncoder):
                 drums = inst
 
         if not drums:
-            raise NeuralSeqEncodingException
+            raise NeuralSeqEncodingException('Instrument was not found')
 
         resolution = 60 / tempo / 4  # 16th notes
+
+        drums.notes = sorted(drums.notes, key=lambda x: x.start)
 
         toks = []
         prev_start = 0
@@ -36,13 +38,17 @@ class DrumEncoder(BaseEncoder):
             if start > 0 and start == prev_start:
                 toks.append(f'P-{note.pitch}')
             else:
-                duration = int((start - prev_start) // resolution)
+                # Compress any rests longer than one bar (assuming 4/4)
+                duration = int((start - prev_start) // resolution) % 16
                 toks.append(f'D-{duration}')
                 toks.append(f'P-{note.pitch}')
                 prev_start = start
+
+        if len(toks) < 32:
+            raise NeuralSeqEncodingException('Sequence length too short')
         return toks
 
-    def decode(self, enc, midi_programs, tempo=None):
+    def decode(self, enc, midi_programs=None, tempo=None):
         decoded = pretty_midi.PrettyMIDI(initial_tempo=tempo)
         drums = pretty_midi.Instrument(0, is_drum=True)
 
@@ -106,3 +112,29 @@ class DrumEncoder(BaseEncoder):
             prev_tok = tok
         decoded.instruments.append(drums)
         return decoded
+
+    def process_prediction(self, prediction, seq_length=None):
+        # If a specified sequence length has been provided, truncate
+        # the prediction to fit (the number of tokens is not the same
+        # as the duration/sequence length of the provided encodings)
+        print(prediction)
+        processed = []
+        duration = 0
+
+        for tok in prediction:
+            if tok[0] == 'D':
+                tok_dur = int(tok.replace('D-', ''))
+
+                # Truncate the duration if we will go over the seq_length limit
+                remaining = seq_length - (duration + tok_dur)
+
+                if remaining < 0:
+                    duration += tok_dur + remaining
+                else:
+                    duration += tok_dur
+                tok = f'D-{tok_dur}'
+            processed.append(tok)
+        return processed
+
+    def duration(self, enc):
+        return sum([int(tok.replace('D-', '')) for tok in enc if 'D-' in tok])

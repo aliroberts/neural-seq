@@ -1,9 +1,12 @@
-import io
-import pretty_midi
 import pygame
+import io
+import os
+import pretty_midi
 import sys
 
 from src.constants import MIDI_PATCH_NAMES
+
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 
 
 def run(args):

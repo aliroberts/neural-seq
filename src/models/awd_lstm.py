@@ -14,6 +14,8 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import torch.optim as optim
 
+from tqdm import tqdm
+
 
 def repackage_hidden(h):
     """Wraps hidden states in new Tensors,
@@ -88,7 +90,6 @@ class RNNModel(nn.Module):
                 ninp if tie_weights else nhid), save_prev_x=True, zoneout=0, window=2 if l == 0 else 1, output_gate=True) for l in range(nlayers)]
             for rnn in self.rnns:
                 rnn.linear = WeightDrop(rnn.linear, ['weight'], dropout=wdrop)
-        print(self.rnns)
         self.rnns = torch.nn.ModuleList(self.rnns)
         self.decoder = nn.Linear(nhid, ntoken)
 
@@ -128,12 +129,12 @@ class RNNModel(nn.Module):
     def forward(self, input, hidden, return_h=False):
         emb = embedded_dropout(self.encoder, input,
                                dropout=self.dropoute if self.training else 0)
-        #emb = self.idrop(emb)
+        # emb = self.idrop(emb)
         emb = self.lockdrop(emb, self.dropouti)
 
         raw_output = emb
         new_hidden = []
-        #raw_output, hidden = self.rnn(emb, hidden)
+        # raw_output, hidden = self.rnn(emb, hidden)
         raw_outputs = []
         outputs = []
         for l, rnn in enumerate(self.rnns):
@@ -185,6 +186,7 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
     optimizer = optim.ASGD(model.parameters(), lr=lr,
                            t0=t0, lambd=lambd, weight_decay=wdecay)
     train_dl = data.train_dl
+    valid_dl = data.valid_dl
     vocab_sz = len(data.vocab.itos)
     hidden = model.init_hidden(data.bs)
 
@@ -193,12 +195,13 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
     model.train()
 
     for epoch in range(1, epochs + 1):
-        for xb, yb in train_dl:
+        if epoch in when:
+            lr /= 10
+            print(f'Learning rate reduced ({lr})')
+        print('Training...ls')
+        for xb, yb in tqdm(train_dl):
             # xb and yb here will contain indices for a lookup table for each symbol in our vocabulary
             # They will be of dimension bs * bptt
-            if epoch in when:
-                lr /= 10
-                print(f'Learning rate reduced ({lr})')
 
             hidden = repackage_hidden(hidden)
             optimizer.zero_grad()
@@ -220,13 +223,15 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
                 sum(beta * (rnn_h[1:] - rnn_h[:-1]
                             ).pow(2).mean() for rnn_h in rnn_hs[-1:])
             loss.backward()
-            torch.nn.utils.clip_grad_norm(model.parameters(), clip)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
             optimizer.step()
-
-            if args.save_freq and epoch % args.save_freq == 0 or epoch == epochs:
-                checkpoint_name = f'model-epoch-{epoch}.pth'
-                print(f'Saving checkpoint {checkpoint_name}')
-                torch.save(model.state_dict(),
-                           f'{args.dest}/{checkpoint_name}')
-
-            print(f'Loss: {raw_loss.data}')
+        if args.save_freq and epoch % args.save_freq == 0 or epoch == epochs:
+            checkpoint_name = f'model-epoch-{epoch}.pth'
+            print(f'Saving checkpoint {checkpoint_name}')
+            torch.save(model.state_dict(),
+                       f'{args.dest}/{checkpoint_name}')
+        model.eval()
+        with torch.no_grad():
+            valid_loss = sum(criterion(model(xb.t(), model.init_hidden(
+                data.bs))[0].view(-1, vocab_sz), yb.view(-1)) for xb, yb in valid_dl) / len(valid_dl)
+        print(f'{epoch} Train: {raw_loss.data} Valid: {valid_loss}')

@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import tarfile
@@ -6,6 +7,27 @@ from src.utils.download import download_file
 from src.utils.system import copyfile, make_temp_dir, yn
 
 from src.constants import MIDI_DATA_URL, MIDI_DIR, MIDI_ARTISTS
+
+
+def play_midi(midi_data):
+    """
+    Play a pretty_midi.MidiData object using pygame
+    """
+    os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
+    import pygame
+    buff = io.BytesIO()
+    midi_data.write(buff)
+    buff.seek(0)
+
+    pygame.mixer.init()
+    pygame.mixer.music.load(buff)
+    try:
+        pygame.mixer.music.play()
+        print(f'Playing... (Ctrl+C to stop)')
+        while pygame.mixer.music.get_busy():
+            pygame.time.wait(1000)
+    except KeyboardInterrupt:
+        sys.exit(0)
 
 
 def fetch_midi_data():
