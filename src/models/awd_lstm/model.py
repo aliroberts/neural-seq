@@ -182,6 +182,7 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
     vocab_sz = len(data.vocab.itos)
     if gpu:
         model.cuda()
+
     hidden = model.init_hidden(data.bs)
 
     when = map(lambda x: int(x), when.split(','))
@@ -191,7 +192,7 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
         if epoch in when:
             lr /= 10
             print(f'Learning rate reduced ({lr})')
-        print('Training...ls')
+        print('Training...')
         for xb, yb in tqdm(train_dl):
             # xb and yb here will contain indices for a lookup table for each symbol in our vocabulary
             # They will be of dimension bs * bptt
