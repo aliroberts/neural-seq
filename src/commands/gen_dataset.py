@@ -21,7 +21,12 @@ def gen_dataset_from_artists(artists, dest, encoder, instrument_filter, transpos
     midi_files = []
     for artist in artists:
         song_dir = MIDI_ARTISTS/artist
-        midi_files += [song_dir/song for song in os.listdir(song_dir)]
+        try:
+            midi_files += [song_dir /
+                           song for song in os.listdir(song_dir)]
+        except NotADirectoryError:
+            print(f'Warning: No directory for artist \'{artist}\' found')
+            continue
 
     # Encode all the midi files to an 'all' directory
     save_all_to = Path(dest)/'all'
@@ -83,7 +88,8 @@ def run(args):
         instrument): return args.filter in str(instrument).lower()
 
     if os.path.isdir(dest):
-        dir_contents = os.listdir(dest)
+        dir_contents = [d for d in os.listdir(
+            dest) if os.path.isdir(Path(dest)/d)]
 
         if 'train' in dir_contents and 'valid' in dir_contents:
             should_delete_dir = yn(
