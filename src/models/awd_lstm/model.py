@@ -101,7 +101,8 @@ class RNNModel(nn.Module):
         self.tie_weights = tie_weights
 
         for rnn in self.rnns:
-            rnn.flatten_parameters()
+            if isinstance(rnn, nn.LSTM):
+                rnn.flatten_parameters()
 
     def reset(self):
         if self.rnn_type == 'QRNN':
