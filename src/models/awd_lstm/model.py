@@ -100,10 +100,6 @@ class RNNModel(nn.Module):
         self.dropoute = dropoute
         self.tie_weights = tie_weights
 
-        for rnn in self.rnns:
-            if isinstance(rnn, nn.LSTM):
-                rnn.flatten_parameters()
-
     def reset(self):
         if self.rnn_type == 'QRNN':
             [r.reset() for r in self.rnns]
@@ -189,9 +185,9 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
     hidden = model.init_hidden(data.bs)
 
     when = map(lambda x: int(x), when.split(','))
-    model.train()
 
     for epoch in range(1, epochs + 1):
+        model.train()
         if epoch in when:
             lr /= 10
             print(f'Learning rate reduced ({lr})')
@@ -205,6 +201,9 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
 
             # Note that since this LSTM doesn't use batch_first structure we need
             # to transpose the input to be of shape (bptt * bs)
+            for rnn in model.rnns:
+                if isinstance(rnn, nn.RNN):
+                    rnn.flatten_parameters()
 
             output, hidden, rnn_hs, dropped_rnn_hs = model(
                 xb.t(), hidden, return_h=True)
