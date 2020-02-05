@@ -7,7 +7,6 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 import torch.nn.functional as F
-import torch.optim as optim
 
 from tqdm import tqdm
 
@@ -148,10 +147,11 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
     criterion = nn.CrossEntropyLoss()
 
     if optim.lower() == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wdecay)
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=lr, weight_decay=wdecay)
     elif optim.lower() == 'asgd':
-        optimizer = optim.ASGD(model.parameters(), lr=lr,
-                               t0=t0, lambd=lambd, weight_decay=wdecay)
+        optimizer = torch.optim.ASGD(model.parameters(), lr=lr,
+                                     t0=t0, lambd=lambd, weight_decay=wdecay)
     else:
         print('Unrecognized optimizer')
         sys.exit(1)
