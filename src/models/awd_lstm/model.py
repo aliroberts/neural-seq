@@ -163,7 +163,7 @@ class RNNModel(nn.Module):
         return output
 
 
-def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, beta=0, clip=0.25, when='0', optim='adam'):
+def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, beta=0, clip=0.25, when='0', optim='adam', gpu=False):
     dest = args.dest
     epochs = args.epochs
     criterion = nn.CrossEntropyLoss()
@@ -184,6 +184,8 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
 
     when = map(lambda x: int(x), when.split(','))
 
+    if gpu:
+        model.cuda()
     model.train()
 
     for epoch in range(1, epochs + 1):
