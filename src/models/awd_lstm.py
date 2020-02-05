@@ -5,6 +5,8 @@
 # Copyright (c) 2017,
 # All rights reserved.
 
+import sys
+
 import numpy as np
 
 import torch
@@ -64,7 +66,7 @@ def embedded_dropout(embed, words, dropout=0.1, scale=None):
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
 
-    def __init__(self, ntoken, ninp=300, nhid=600, nlayers=4, rnn_type='LSTM', dropout=0.5, dropouth=0.5, dropouti=0.5, dropoute=0.1, wdrop=0, tie_weights=False):
+    def __init__(self, ntoken, ninp=300, nhid=600, nlayers=4, rnn_type='LSTM', dropout=0.5, dropouth=0.5, dropouti=0.5, dropoute=0.1, wdrop=0.0, tie_weights=False):
         super(RNNModel, self).__init__()
         self.lockdrop = LockedDropout()
         self.idrop = nn.Dropout(dropouti)
@@ -179,12 +181,19 @@ class RNNModel(nn.Module):
         return output
 
 
-def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, beta=0, clip=0.25, when='10,20,30'):
+def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, beta=0, clip=0.25, when='0', optim='adam'):
     dest = args.dest
     epochs = args.epochs
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.ASGD(model.parameters(), lr=lr,
-                           t0=t0, lambd=lambd, weight_decay=wdecay)
+
+    if optim.lower() == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wdecay)
+    elif optim.lower() == 'asgd':
+        optimizer = optim.ASGD(model.parameters(), lr=lr,
+                               t0=t0, lambd=lambd, weight_decay=wdecay)
+    else:
+        print('Unrecognized optimizer')
+        sys.exit(1)
     train_dl = data.train_dl
     valid_dl = data.valid_dl
     vocab_sz = len(data.vocab.itos)
