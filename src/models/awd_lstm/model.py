@@ -186,6 +186,7 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
 
     if gpu:
         model.cuda()
+        criterion.cuda
     model.train()
 
     for epoch in range(1, epochs + 1):
@@ -198,10 +199,13 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
             # They will be of dimension bs * bptt
 
             hidden = repackage_hidden(hidden)
+            if gpu:
+                hidden.cuda()
             optimizer.zero_grad()
 
             # Note that since this LSTM doesn't use batch_first structure we need
             # to transpose the input to be of shape (bptt * bs)
+
             output, hidden, rnn_hs, dropped_rnn_hs = model(
                 xb.t(), hidden, return_h=True)
 
