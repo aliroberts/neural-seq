@@ -100,6 +100,9 @@ class RNNModel(nn.Module):
         self.dropoute = dropoute
         self.tie_weights = tie_weights
 
+        for rnn in self.rnns:
+            rnn.flatten_parameters()
+
     def reset(self):
         if self.rnn_type == 'QRNN':
             [r.reset() for r in self.rnns]
@@ -180,13 +183,11 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
     train_dl = data.train_dl
     valid_dl = data.valid_dl
     vocab_sz = len(data.vocab.itos)
+    if gpu:
+        model.cuda()
     hidden = model.init_hidden(data.bs)
 
     when = map(lambda x: int(x), when.split(','))
-
-    if gpu:
-        model.cuda()
-        criterion.cuda
     model.train()
 
     for epoch in range(1, epochs + 1):
@@ -199,8 +200,6 @@ def train(data, model, args, lr=1e-3, t0=0, lambd=0, wdecay=1.2e-6, alpha=0, bet
             # They will be of dimension bs * bptt
 
             hidden = repackage_hidden(hidden)
-            if gpu:
-                hidden.cuda()
             optimizer.zero_grad()
 
             # Note that since this LSTM doesn't use batch_first structure we need
