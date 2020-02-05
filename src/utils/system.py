@@ -42,7 +42,6 @@ def is_strict_subclass(c1, c2, strict=True):
 def fetch_subclass_from_file(dir_, module_name, class_, strict=False, defined_in_mod=True):
     module_path = str(dir_).replace('/', '.') + '.' + module_name
     module = importlib.import_module(module_path)
-
     # Fetch the highest class in the inheritance heirarchy
     highest_subclass = None
     for attr in dir(module):
@@ -53,8 +52,8 @@ def fetch_subclass_from_file(dir_, module_name, class_, strict=False, defined_in
         if is_strict_subclass(candidate, class_, strict=strict):
             if highest_subclass and is_strict_subclass(highest_subclass, candidate):
                 continue
-            if defined_in_mod and candidate.__module__ != module_path:
-                continue
+            # if defined_in_mod and candidate.__module__ != module_path:
+            #     continue
             highest_subclass = candidate
     return highest_subclass
 
