@@ -82,37 +82,6 @@ class DrumEncoder(BaseEncoder):
         decoded.instruments.append(drums)
         return decoded
 
-        for tok in enc:
-            if tok[0] == 'P':
-                if prev_tok and prev_tok[0] == 'P':
-                    # The previous token was a play action, so we want to create a chord (start this one
-                    # at the same time)
-                    start = notes[-1].start
-                elif prev_tok and prev_tok[0] == 'D':
-                    # The previous token was a duration, so we want to start the new note at the time of the
-                    # previous one's start + length of the duration in secs
-                    if prev_note:
-                        prev_start = prev_note.start
-                    else:
-                        prev_start = 0
-                    start = prev_start + \
-                        int(prev_tok.replace('D-', '')) * resolution
-                else:
-                    # No previous token, start from the beginnning
-                    start = 0
-                vel = 100
-                pitch = int(tok.replace('P-', ''))
-                note = pretty_midi.Note(
-                    velocity=vel, pitch=pitch, start=start, end=start+resolution)
-                notes.append(note)
-                prev_note = note
-            elif prev_note:
-                dur += int(tok.replace('D-', '')) * resolution
-
-            prev_tok = tok
-        decoded.instruments.append(drums)
-        return decoded
-
     def process_prediction(self, prediction, seq_length=None):
         # If a specified sequence length has been provided, truncate
         # the prediction to fit (the number of tokens is not the same
