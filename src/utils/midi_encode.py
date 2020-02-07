@@ -8,6 +8,7 @@ import sys
 import music21
 import pretty_midi
 
+from src import NeuralSeqEncodingException
 from src.constants import ENCODER_DIR, MIDI_PATCH_NAMES
 from src.utils.system import fetch_subclass_from_file
 
@@ -112,7 +113,7 @@ class MIDIData(object):
                     encoded = [midi_data.encode()]
                 else:
                     encoded = midi_data.encode_range()
-            except Exception:
+            except NeuralSeqEncodingException:
                 print('Encoding failed. Skipping...')
                 continue
 
