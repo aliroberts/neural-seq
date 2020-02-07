@@ -10,6 +10,8 @@ import torch
 import torch.nn.functional as F
 import random
 
+from collections import OrderedDict
+
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 
 
@@ -60,7 +62,16 @@ def run(args):
     Model, _, _ = fetch_model(args.model)
     model = Model(len(vocab.itos), **model_kwargs)
 
-    model.load_state_dict(torch.load(args.state))
+    state_dict = torch.load(args.state, map_location=torch.device('cpu'))
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k.replace('module.', '')  # remove 'module.' of dataparallel
+        new_state_dict[name] = v
+
+    model.load_state_dict(new_state_dict, strict=False)
+
+    # model.load_state_dict(torch.load(
+    #     args.state, map_location=torch.device('cpu')))
 
     predict_func = PREDICT_CHOICES[args.sample]
 
