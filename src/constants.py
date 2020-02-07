@@ -205,3 +205,5 @@ MIDI_DRUM_PATCH_NAMES = {
     80: 'Mute Triangle',
     81: 'Open Triangle'
 }
+
+MIDI_DRUM_PATCH_NUMS = {v: k for k, v in MIDI_DRUM_PATCH_NAMES.items()}

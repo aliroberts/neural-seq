@@ -14,7 +14,6 @@ def play_midi(midi_data):
     Play a pretty_midi.MidiData object using pygame
     """
     os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
-    import pygame
     buff = io.BytesIO()
     midi_data.write(buff)
     buff.seek(0)

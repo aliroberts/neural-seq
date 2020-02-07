@@ -124,6 +124,7 @@ class MIDIData(object):
             for i, enc in enumerate(encoded):
                 vocab = vocab.union(set(enc))
                 _, tempi = midi_data.midi_data.get_tempo_changes()
+
                 enc_data = {
                     'data': enc,
                     'vocab': list(vocab),
@@ -152,12 +153,11 @@ class MIDIData(object):
             tempo = tempo if tempo else enc_tempo
             decoded = encoder.decode(
                 enc, midi_programs=midi_programs, tempo=tempo)
-
             out_fname = os.path.splitext(fpath)[0] + '.mid'
             out_path = Path(dest)/os.path.basename(out_fname)
             print(f'----> Writing file to {out_path}')
-            with open(out_path, 'w') as f:
-                decoded.write(out_fname)
+            with open(out_path, 'wb') as f:
+                decoded.write(f)
             print('----> DONE')
 
     def __init__(self, midi_data, encoder):

@@ -11,6 +11,8 @@ def round_to(val, rnd):
 
 
 class DrumEncoder(BaseEncoder):
+    SMALLEST_DIVISION = 8
+
     def encode(self, midi):
         _, tempi = midi.get_tempo_changes()
         tempo = tempi[0]
@@ -24,7 +26,7 @@ class DrumEncoder(BaseEncoder):
         if not drums:
             raise NeuralSeqEncodingException('Instrument was not found')
 
-        resolution = 60 / tempo / 4  # 16th notes
+        resolution = 60 / tempo / self.SMALLEST_DIVISION
 
         drums.notes = sorted(drums.notes, key=lambda x: x.start)
 
@@ -39,7 +41,8 @@ class DrumEncoder(BaseEncoder):
                 toks.append(f'P-{note.pitch}')
             else:
                 # Compress any rests longer than one bar (assuming 4/4)
-                duration = int((start - prev_start) // resolution) % 16
+                duration = int((start - prev_start) //
+                               resolution) % self.SMALLEST_DIVISION * 4
                 toks.append(f'D-{duration}')
                 toks.append(f'P-{note.pitch}')
                 prev_start = start
@@ -52,7 +55,7 @@ class DrumEncoder(BaseEncoder):
         decoded = pretty_midi.PrettyMIDI(initial_tempo=tempo)
         drums = pretty_midi.Instrument(0, is_drum=True)
 
-        resolution = 60 / tempo / 4  # 16th notes
+        resolution = 60 / tempo / self.SMALLEST_DIVISION
 
         notes = drums.notes
         prev_note = None
