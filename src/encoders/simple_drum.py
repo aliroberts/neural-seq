@@ -31,18 +31,22 @@ class DrumEncoder(BaseEncoder):
         drums.notes = sorted(drums.notes, key=lambda x: x.start)
 
         toks = []
-        prev_start = 0
+        prev_start = None
         durations = []
 
         for note in drums.notes:
             # Snap to nearest time step
             start = round_to(note.start, resolution)
-            if start > 0 and start == prev_start:
+
+            if prev_start is None:
+                prev_start = start
+
+            if start == prev_start:
                 toks.append(f'P-{note.pitch}')
             else:
                 # Compress any rests longer than one bar (assuming 4/4)
                 duration = int((start - prev_start) //
-                               resolution) % self.SMALLEST_DIVISION * 4
+                               resolution) % (self.SMALLEST_DIVISION * 4)
                 toks.append(f'D-{duration}')
                 toks.append(f'P-{note.pitch}')
                 prev_start = start
@@ -89,7 +93,6 @@ class DrumEncoder(BaseEncoder):
         # If a specified sequence length has been provided, truncate
         # the prediction to fit (the number of tokens is not the same
         # as the duration/sequence length of the provided encodings)
-        print(prediction)
         processed = []
         duration = 0
 
