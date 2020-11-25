@@ -52,7 +52,7 @@ def train(data, model, epochs, dest, lr=3e-3):
             num += 1
             loss.backward()
             optim.step()
-        print(f'epoch {i + 1} loss {epoch_loss/num}')
-        if i % 10 == 0:
-            torch.save(model.state_dict(), dest/f'model-{i+1}.pth')
+        print(f'epoch {i} loss {epoch_loss/num}')
+        if (i + 1) % 25 == 0:
+            torch.save(model.state_dict(), dest/f'model-{i + 1}.pth')
     torch.save(model.state_dict(), dest/'model.pth')
