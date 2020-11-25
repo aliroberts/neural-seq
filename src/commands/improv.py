@@ -20,25 +20,41 @@ def predict_beam(prompt, model, encoder, vocab, args):
 
 
 def predict_topk(prompt, model, encoder, vocab, args):
-    seq = prompt
-
-    ids = vocab.numericalize(seq)
-    vocab_sz = len(vocab.itos)
-    model.eval()
-    with torch.no_grad():
-        while encoder.duration(vocab.textify(ids).split(' ')) < args.seq:
-            decoded = model.predict(torch.LongTensor([[ids[-1]]]))
-            # decoded, hidden = model.forward(torch.LongTensor([ids]), None)
-            last_out = F.softmax(decoded.view(-1, vocab_sz)[-1], dim=0)
-            topk = torch.as_tensor(torch.topk(last_out, args.k)[
-                1], dtype=torch.float)
-            choice_idx = int(torch.multinomial(topk, 1))
-            ids.append(int(topk[choice_idx]))
-    return encoder.process_prediction(vocab.textify(ids).split(' '), seq_length=args.seq)
+    raise NotImplementedError
 
 
 def predict_nucleus(prompt, model, encoder, vocab, args):
-    raise NotImplementedError
+    model.eval()
+    vocab_sz = len(vocab.itos)
+
+    # Store the generated string sequence
+    generated = prompt
+
+    with torch.no_grad():
+        while encoder.duration(generated) < args.seq:
+            out = model.predict(torch.LongTensor(
+                vocab.numericalize(generated)))
+
+            # Get the last vector of logprobs
+            logprobs = out.reshape(-1, vocab_sz)[-1]
+
+            nucleus_probs = []
+            nucleus_indices = []
+
+            sorted_probs = F.softmax(logprobs/1, -1).sort(descending=True)
+            for p, idx in zip(sorted_probs[0], sorted_probs[1]):
+                nucleus_probs.append(p)
+                nucleus_indices.append(idx)
+                if sum(nucleus_probs) > 0.9:
+                    break
+
+            unnormalised = torch.Tensor(nucleus_probs)
+            probs = unnormalised * (1/sum(torch.Tensor(unnormalised)))
+            # We need to refer back to the original indices to grab the correct vocab elements
+            prediction = nucleus_indices[torch.distributions.Categorical(
+                probs).sample().item()]
+            generated.append(vocab.itos[prediction])
+    return generated
 
 
 PREDICT_CHOICES = {
