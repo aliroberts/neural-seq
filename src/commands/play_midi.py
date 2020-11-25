@@ -1,12 +1,9 @@
-import pygame
 import io
 import os
 import pretty_midi
 import sys
 
 from src.constants import MIDI_PATCH_NAMES
-
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 
 
 def run(args):
@@ -32,6 +29,7 @@ def run(args):
     midi_data.write(buff)
     buff.seek(0)
 
+    import pygame
     pygame.mixer.init()
     pygame.mixer.music.load(buff)
     try:
