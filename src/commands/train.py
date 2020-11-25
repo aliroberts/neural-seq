@@ -33,46 +33,42 @@ class CustomTokenizer(Tokenizer):
                          pre_rules=[], post_rules=[], special_cases=[])
 
 
+def load_data(data_dir, vocab, bs=64, bptt=128):
+    if 'test' in os.listdir(data_dir):
+        test = 'test'
+    else:
+        test = None
+
+    with open(Path(data_dir)/'vocab', 'r') as f:
+        vocab = Vocab(f.read().split(','))
+
+    return TextLMDataBunch.from_folder(
+        data_dir, tokenizer=CustomTokenizer(), include_bos=False,
+        include_eos=False, bs=bs, vocab=vocab, bptt=bptt, test=test)
+
+
 def run(args, model_kwargs, train_kwargs):
     """
     Accept command line args as a param and the model and train kwargs (dicts with {<kwarg_name>: <default_val>,...})
     """
-    dest_dir = Path(os.path.abspath(args.dest))
+    dest_dir = Path(os.path.abspath(args.dest))  # dir to save the model to
+    data_dir = args.data_dir
+    bptt = int(args.bptt)
+    bs = int(args.bs)
     ensure_dir_exists(dest_dir)
+
     print('Loading data...')
     data_lm_path = dest_dir/'data_lm_export.pkl'
 
     with open(Path(args.data_dir)/'vocab', 'r') as f:
         vocab = Vocab(f.read().split(','))
 
-    # if args.cache:
-    #     data_lm = TextLMDataBunch.from_folder(
-    #         args.data_dir, tokenizer=CustomTokenizer(), include_bos=False,
-    #         vocab=vocab,
-    #         include_eos=False, bs=args.bs, bptt=args.bptt)
-    #     data_lm.save(data_lm_path)
-    # else:
-    #     try:
-    #         data_lm = load_data(args.data_dir, data_lm_path)
-    #     except FileNotFoundError:
-    #         print('No pickled databunch found, generating a new one')
-    #         data_lm = TextLMDataBunch.from_folder(
-    #             args.data_dir, tokenizer=CustomTokenizer(), include_bos=False,
-    #             include_eos=False, bs=args.bs, vocab=vocab, bptt=args.bptt)
-    #         data_lm.save(data_lm_path)
+    data_lm = load_data(data_dir, data_dir, bs=bs, bptt=bptt)
 
-    if 'test' in os.listdir(args.data_dir):
-        test = 'test'
-    else:
-        test = None
-
-    data_lm = TextLMDataBunch.from_folder(
-        args.data_dir, tokenizer=CustomTokenizer(), include_bos=False,
-        include_eos=False, bs=args.bs, vocab=vocab, bptt=int(args.bptt), test=test)
-    # import ipdb
-    # ipdb.set_trace()
     print('Saving vocab...')
     data_lm.vocab.save(dest_dir/'vocab.pkl')
+
+    # data_lm = = load_data
 
     model_custom_kwargs = {k: getattr(args, k)
                            for k, _ in model_kwargs.items()}
@@ -86,5 +82,5 @@ def run(args, model_kwargs, train_kwargs):
     with open(dest_dir/'params.pkl', 'wb') as f:
         pickle.dump(model_custom_kwargs, f)
 
-    train_func(data_lm, model, args, **train_custom_kwargs)
-    return
+    train_func(data_lm, model, args.epochs,
+               dest_dir, **train_custom_kwargs)
