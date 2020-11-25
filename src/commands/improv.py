@@ -86,9 +86,6 @@ def run(args):
 
     model.load_state_dict(new_state_dict, strict=False)
 
-    # model.load_state_dict(torch.load(
-    #     args.state, map_location=torch.device('cpu')))
-
     predict_func = PREDICT_CHOICES[args.sample]
 
     # If no prompt has been provided, choose a random token from our vocab to start with
