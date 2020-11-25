@@ -1,5 +1,6 @@
 
 import argparse
+import os
 from functools import partial
 import sys
 
@@ -8,6 +9,8 @@ from src.commands import encode, decode, fetch_data, gen_dataset, improv, list_a
 from src.utils.models import fetch_model
 from src.utils.system import get_kwarg_dict
 from src.constants import DATA_DIR
+
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 
 
 def main():
@@ -62,7 +65,7 @@ def main():
                                     help='A filter to be applied to the instrument name in the MIDI file', type=str)
     parser_gen_dataset.add_argument('--transpose', default=False, action='store_true',
                                     help='Do not transpose each MIDI file (produce a single example from a MIDI file rather than a collection in various keys)')
-    parser_gen_dataset.add_argument('--valid', default=0.2,
+    parser_gen_dataset.add_argument('--valid', default=0,
                                     help='Proportion of the input files to reserve for the validation set (Default 0)', type=float)
     parser_gen_dataset.add_argument('--test', default=0,
                                     help='Proportion of the input files to reserve for the test set (Default 0)', type=float)
@@ -86,7 +89,7 @@ def main():
                                help='Number of times to loop the generated sequence', type=int)
     parser_improv.add_argument('--tempo', default=120,
                                help='Tempo of generated MIDI', type=int)
-    parser_improv.add_argument('--sample', default='topk',
+    parser_improv.add_argument('--sample', default='nucleus',
                                help='Sampling strategy for generation [ml|top-<n>|nucleus]', type=str)
     parser_improv.add_argument('--k', default=3,
                                help='Set k for beam or topk sampling', type=int)
