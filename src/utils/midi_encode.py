@@ -10,6 +10,7 @@ import pretty_midi
 
 from src import NeuralSeqEncodingException
 from src.constants import ENCODER_DIR, MIDI_PATCH_NAMES
+from src.utils.midi_data import play_midi
 from src.utils.system import fetch_subclass_from_file
 
 
@@ -59,10 +60,14 @@ class MIDIData(object):
     A thin wrapper around pretty_midi's PrettyMIDI class which wraps it up with and encoder.
     """
     @classmethod
-    def from_file(cls, fname, encoder, instrument_filter=None):
+    def from_file(cls, fname, encoder, instrument=None, instrument_filter=None):
         """
         Load a MIDIData instance from the specified MIDI file and with the supplied encoder instance.
         """
+
+        if instrument:
+            def instrument_filter(x): return x == instrument
+
         midi_data = pretty_midi.pretty_midi.PrettyMIDI(str(fname))
         for inst in midi_data.instruments:
             try:
@@ -70,7 +75,7 @@ class MIDIData(object):
             except IndexError:
                 continue
 
-            if instrument_filter(name.lower()):
+            if instrument_filter and instrument_filter(name.lower()):
                 print(
                     f'Found instrument matching filter: {name}')
                 midi_data.instruments = [inst]
@@ -171,12 +176,22 @@ class MIDIData(object):
         """
         return self.encoder.encode(self.midi_data)
 
+    def get_tempo(self):
+        """
+        Get the first tempo of the MIDI file
+        """
+        _, tempi = self.midi_data.get_tempo_changes()
+        return tempi[0]
+
     def encode_range(self):
         """
         Create a batch of encodings for a single MIDIData object that are transposed into as many keys as possible
         (given the range of the instruments)
         """
         return [self.encoder.encode(self.midi_data)]
+
+    def play(self):
+        play_midi(self.midi_data)
 
     def __len__(self):
         return len(self.midi_data.instruments)
