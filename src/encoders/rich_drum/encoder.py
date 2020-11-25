@@ -53,10 +53,13 @@ class RichDrumEncoder(DrumEncoder):
     def decode(self, enc, midi_programs=None, tempo=None):
         return super().decode(self.rich_to_simple(enc), midi_programs=midi_programs, tempo=tempo)
 
-    def process_prediction(self, enc):
+    def process_prediction(self, enc, **kwargs):
         simple_enc = self.rich_to_simple(enc)
-        return self.simple_to_rich(super().process_prediction(simple_enc))
+        prediction = self.simple_to_rich(
+            super().process_prediction(simple_enc, **kwargs))
+        print(prediction)
+        return prediction
 
     def duration(self, enc):
         simple_enc = self.rich_to_simple(enc)
-        return self.simple_to_rich(super().duration(simple_enc))
+        return super().duration(simple_enc)
