@@ -31,6 +31,10 @@ class RNN(nn.Module):
 
 
 def train(data, model, epochs, dest, lr=3e-3):
+
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+
     loss_func = F.cross_entropy
     optim = torch.optim.Adam(model.parameters(), lr=lr)
 
@@ -38,8 +42,8 @@ def train(data, model, epochs, dest, lr=3e-3):
         epoch_loss = 0
         num = 0
         for xb, yb in tqdm(data.train_dl):
-            x = xb.t()
-            y = yb.t()
+            x = xb.to(device).t()
+            y = yb.to(device).t()
             model.zero_grad()
             out, _, _ = model(xb.t())
             loss = F.cross_entropy(
