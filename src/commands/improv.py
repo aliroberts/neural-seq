@@ -1,4 +1,5 @@
 
+import math
 from fastai.text import *
 from pathlib import Path
 import pickle
@@ -6,9 +7,12 @@ import os
 from src.utils.midi_data import play_midi
 from src.utils.midi_encode import MIDIData, fetch_encoder
 from src.utils.models import fetch_model
+import numpy as np
 import torch
 import torch.nn.functional as F
 import random
+
+import time
 
 from collections import OrderedDict
 
@@ -30,18 +34,23 @@ def predict_nucleus(prompt, model, encoder, vocab, args):
     # Store the generated string sequence
     generated = prompt
 
+    def calc_temp(t):
+        # math.exp((t-64)/12) + np.random.binomial(1, 1/32)
+        return 1.1
+
     with torch.no_grad():
         while encoder.duration(generated) < args.seq:
+            temp = calc_temp(encoder.duration(generated) % 64)
+
             out = model.predict(torch.LongTensor(
                 vocab.numericalize(generated)))
-
             # Get the last vector of logprobs
             logprobs = out.reshape(-1, vocab_sz)[-1]
 
             nucleus_probs = []
             nucleus_indices = []
 
-            sorted_probs = F.softmax(logprobs/1, -1).sort(descending=True)
+            sorted_probs = F.softmax(logprobs/temp, -1).sort(descending=True)
             for p, idx in zip(sorted_probs[0], sorted_probs[1]):
                 nucleus_probs.append(p)
                 nucleus_indices.append(idx)
@@ -98,4 +107,5 @@ def run(args):
     tokens = enc_seq * args.loop
 
     decoded = encoder.decode(tokens, tempo=args.tempo)
+    decoded.write('most-recent.midi')
     play_midi(decoded)

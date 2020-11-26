@@ -18,15 +18,17 @@ class RNN(nn.Module):
                             hidden_size=n_hid, num_layers=n_layers)
         self.decoder = nn.Linear(n_hid, vocab_sz)
 
-    def forward(self, mb):
+        self.last_hidden = None
+
+    def forward(self, mb, hidden=None):
         x = self.encoder(mb)
-        x, (h, c) = self.lstm(x)
-        return self.decoder(x), h, c
+        x, h = self.lstm(x, hidden)
+        return self.decoder(x), h
 
     def predict(self, seq):
         # The input seq to the model are of dimensions (seq, batchsize)
-        seq = seq.unsqueeze(-1)
-        out, _, _ = self(seq)
+        last = seq[-1].unsqueeze(-1).unsqueeze(-1)
+        out, self.last_hidden = self(last, self.last_hidden)
         return out
 
 
