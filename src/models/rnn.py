@@ -30,8 +30,7 @@ class RNN(nn.Module):
         return out
 
 
-def train(data, model, epochs, dest, lr=3e-3):
-
+def train(data, model, epochs, dest, lr=3e-4):
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
 
